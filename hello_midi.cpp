@@ -31,6 +31,10 @@
 #include <Arduino.h>
 #include <usb_dev.h>
 
+#if defined(USB_MIDI_SERIAL)
+#define USB_MIDI
+#endif
+
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
 
@@ -54,7 +58,6 @@ void loop()
 	if (since_LED_switch > 500) {
 		ledState = !ledState;
 		digitalWriteFast(LED_BUILTIN, ledState? HIGH : LOW);
-		// Serial.print("This is how we do it\r\n");
 		since_LED_switch = 0;
 	}
 
@@ -63,17 +66,22 @@ void loop()
 	#endif
 }
 
-char buf[40];
-
 void onNoteOn(byte chan, byte note, byte vel)
 {
-	
-	snprintf(buf, sizeof(buf), "N %d on\r\n", note);
-	Serial.print(buf);
+	dbg("N %d on\r\n", note);
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
 {
-	snprintf(buf, sizeof(buf), "N %d off\r\n", note);
-	Serial.print(buf);
+	dbg("N %d off\r\n", note);
 }
+
+extern "C" {
+__attribute__((weak))
+int _write(int file, char *ptr, int len)
+{
+	usb_serial_write((const void *)ptr, len);
+	return len;
+}
+}
+
