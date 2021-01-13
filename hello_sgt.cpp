@@ -55,10 +55,10 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
-	#if defined(USB_MIDI)
+
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	usbMIDI.setHandleNoteOff(onNoteOff);
-	#endif
+
 	delay(500);
 	AudioMemory(2);
 	sine1.frequency(Freq);
@@ -103,9 +103,8 @@ void loop()
 	if (run) {
 		sine1.update();
 	}
-	#if defined(USB_MIDI)
+
 	usbMIDI.read();
-	#endif
 }
 
 void onNoteOn(byte chan, byte note, byte vel)
