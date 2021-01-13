@@ -31,29 +31,31 @@
 #include <Audio.h>
 #include <usb_dev.h>
 
-AudioControlSGTL5000	 dac;
-AudioSynthWaveformSine   sine1;
-AudioOutputI2S        	 out;
-AudioConnection          patchCord1(sine1, 0, out, 0);
-AudioConnection          patchCord2(sine1, 0, out, 1);
-uint32_t 				 freq = 440;
-elapsedMillis 			 since_LED_switch, since_hello;
-usb_serial_class Serial;
+AudioControlSGTL5000	dac;
+AudioSynthWaveformSine	sine1;
+AudioOutputI2S        	out;
+AudioConnection         patchCord1(sine1, 0, out, 0);
+AudioConnection       	patchCord2(sine1, 0, out, 1);
+usb_serial_class 		Serial;
+
+elapsedMillis 			since_LED_switch, since_hello;
+
+uint32_t 				freq = 440;
+bool 					ledState = true;
+uint32_t				counter, bigtime;
+
 
 void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
-	AudioMemory(12);
+	delay(1000);
+	AudioMemory(2);
 	dac.enable();
 	sine1.frequency(freq);
 	sine1.amplitude(1.0);
-	Serial.write("Hello teensy kick\r\n");
+	dbg("Hello teensy kick\r\nAudio block size is %u\r\n", AUDIO_BLOCK_SAMPLES);
 }
-
-bool ledState = true;
-uint32_t	counter;
-char buf[30];
 
 void loop()
 {
@@ -62,22 +64,12 @@ void loop()
 		digitalWriteFast(LED_BUILTIN, ledState? HIGH : LOW);
 		since_LED_switch = 0;
 	}
-	if (since_hello > 5000) {
-		// sprintf(buf, "%lu\r\n", counter++);
-		Serial.write(".");
-		if (counter++ > 80) {
-			Serial.write("\r\n");
+	if (since_hello >= 1000) {
+		dbg(".");
+		if (++counter >= 10) {
+			dbg(" isr=%4lu %3lu\r\n", out.isrCount(), bigtime++);
 			counter = 0;
 		}
 		since_hello = 0;
 	}
-}
-
-
-void analog_init(void)
-{
-}
-
-void analogWriteDAC0(int val)
-{
 }
