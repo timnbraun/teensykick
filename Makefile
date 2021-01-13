@@ -67,8 +67,9 @@ hello_midi.elf: $(OBJ_DIR) $(HM_OBJS) $(LIB_LIST) $(MCU_LD)
 	$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
 	@echo built $@
 
-hello_lc.elf: $(OBJ_DIR) $(OBJ_DIR)/hello_lc.o $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(OBJ_DIR)/hello_lc.o $(LIBS) -o $@
+HL_OBJS := $(addprefix $(OBJ_DIR)/,hello_lc.o $(CPP_FILES:.cpp=.o))
+hello_lc.elf: $(OBJ_DIR) $(HL_OBJS) $(LIB_LIST) $(MCU_LD)
+	$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 H8_OBJS := $(addprefix $(OBJ_DIR)/,hello_8211.o $(CPP_FILES:.cpp=.o))
