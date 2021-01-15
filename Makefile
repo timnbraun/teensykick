@@ -45,8 +45,8 @@ LIB_LIST   = $(TEENSY_LIB) $(AUDIO_LIB) $(WIRE_LIB)
 OBJ_DIR = obj
 LIB_DIR = lib
 
-TARGET = hello_sgt
-# TARGET = kick
+# TARGET = hello_sgt
+TARGET = kick
 # CPP_FILES = kick.cpp AudioSampleKick.cpp
 
 LIBS := -L$(LIB_DIR) -lAudio -lWire $(LIBS)
@@ -139,8 +139,8 @@ $(TEENSY_LIB): $(LIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
 
 AUDIO_LIB_CPP_FILES = control_sgtl5000.cpp effect_multiply.cpp filter_biquad.cpp \
-	mixer.cpp output_i2s.cpp output_pt8211.cpp synth_dc.cpp synth_sine.cpp \
-	synth_whitenoise.cpp
+	mixer.cpp output_i2s.cpp output_pt8211.cpp synth_dc.cpp synth_simple_drum.cpp \
+	synth_sine.cpp synth_whitenoise.cpp
 AUDIO_LIB_C_FILES = data_waveforms.c
 AUDIO_LIB_S_FILES = memcpy_audio.S
 AUDIO_OBJS := $(addprefix $(OBJ_DIR)/,$(AUDIO_LIB_C_FILES:.c=.o) \
