@@ -1,4 +1,4 @@
-/* hello teensy LC
+/* hello sine : teensy LC
  *
  * Copyright (c) 2020 Tim Braun
  *
@@ -33,8 +33,13 @@
 
 #define dbg(...) \
 	fiprintf(stderr, __VA_ARGS__)
+#define dbg_putc(c) \
+	fputc((c), stderr)
 
+void onNoteOn(byte chan, byte note, byte vel);
+void onNoteOff(byte chan, byte note, byte vel);
 
+AudioControlSGTL5000	dac;
 AudioSynthWaveformSine  sine1;
 AudioOutputI2S        	out;
 AudioConnection         patchCord1(sine1, 0, out, 0);
@@ -45,7 +50,6 @@ elapsedMillis 			since_LED_switch, since_hello;
 elapsedMillis			interrupt_time;
 
 uint32_t	Freq = 440;
-bool 		ledState = true;
 uint32_t	counter, bigtime;
 uint32_t	interrupts_last, interrupts_delta;
 
@@ -53,17 +57,26 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+
+	usbMIDI.setHandleNoteOn(onNoteOn);
+	usbMIDI.setHandleNoteOff(onNoteOff);
+
+	delay(500);
 	AudioMemory(2);
 	sine1.frequency(Freq);
 	sine1.amplitude(1.0);
 	dbg("Hello sine\r\n");
+	delay(100);
+	dac.enable();
+	dac.lineOutLevel( 14 );
 }
 
 void loop()
 {
+	static bool run = true, levelHigh = true;
+
 	if (since_LED_switch > 500) {
-		ledState = !ledState;
-		digitalWriteFast(LED_BUILTIN, ledState? HIGH : LOW);
+		digitalToggleFast(LED_BUILTIN);
 		since_LED_switch = 0;
 	}
 	if (since_hello >= 1000) {
@@ -85,9 +98,43 @@ void loop()
 		case 'b':
 			dbg("sine used %u cycles\r\n", sine1.cpu_cycles_total );
 		break;
+		case ' ':
+			run = !run;
+			dbg("now %s\r\n", run? "running" : "stopped");
+			if (run) {
+				sine1.amplitude(1.0);
+			}
+			else {
+				sine1.amplitude(0.0);
+			}
+		break;
+		case 'l':
+			if (levelHigh) {
+				dac.lineOutLevel( 28 );
+			}
+			else {
+				dac.lineOutLevel( 14 );
+			}
+			levelHigh = !levelHigh;
+			dbg("level now %s\r\n", levelHigh? "high" : "low");
+		break;
+		case 'r':
+			_reboot_Teensyduino_();
+		break;
 		default:
-			Serial.write((uint8_t)incoming);
+			dbg_putc(incoming);
 		}
 	}
-	sine1.update();
+
+	usbMIDI.read();
+}
+
+void onNoteOn(byte chan, byte note, byte vel)
+{
+	dbg("N %d on\r\n", note);
+}
+
+void onNoteOff(byte chan, byte note, byte vel)
+{
+	dbg("N %d off\r\n", note);
 }

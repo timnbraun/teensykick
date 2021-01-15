@@ -33,15 +33,17 @@
 
 #define dbg(...) \
 	fiprintf(stderr, __VA_ARGS__)
+#define dbg_putc(c) \
+	fputc((c), stderr)
 
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
 
 AudioControlSGTL5000	dac;
-AudioSynthWaveformSine  sine1;
+// AudioSynthWaveformSine  sine1;
 AudioOutputI2S        	out;
-AudioConnection         patchCord1(sine1, 0, out, 0);
-AudioConnection         patchCord2(sine1, 0, out, 1);
+// AudioConnection         patchCord1(sine1, 0, out, 0);
+// AudioConnection         patchCord2(sine1, 0, out, 1);
 
 usb_serial_class 		Serial;
 elapsedMillis 			since_LED_switch, since_hello;
@@ -61,14 +63,16 @@ void setup()
 
 	delay(500);
 	AudioMemory(2);
-	sine1.frequency(Freq);
-	sine1.amplitude(1.0);
+	// sine1.frequency(Freq);
+	// sine1.amplitude(1.0);
 	dbg("Hello sgt\r\n");
+	delay(500);
+	dac.enable();
 }
 
 void loop()
 {
-	bool run = false;
+	static bool run = true;
 
 	if (since_LED_switch > 500) {
 		digitalToggleFast(LED_BUILTIN);
@@ -90,18 +94,26 @@ void loop()
 	while (Serial.available()) {
 		int incoming = Serial.read();
 		switch (incoming) {
-		case 'b':
-			dbg("sine used %u cycles\r\n", sine1.cpu_cycles_total );
+		// case 'b':
+		//	 dbg("sine used %u cycles\r\n", sine1.cpu_cycles_total );
+		// break;
+		case ' ':
+			run = !run;
+			dbg("now %s\r\n", run? "running" : "stopped");
+		break;
+		case 'l':
+			dac.lineOutLevel( 14 );
 		break;
 		case 'r':
-			run = !run;
+			_reboot_Teensyduino_();
 		break;
 		default:
-			Serial.write((uint8_t)incoming);
+			dbg_putc(incoming);
 		}
 	}
 	if (run) {
-		sine1.update();
+		// sine1.update();
+		out.update();
 	}
 
 	usbMIDI.read();
