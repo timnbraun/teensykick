@@ -5,6 +5,7 @@ example of midi output.
 
 By default it runs the output example.
 
+python midi_kick.py --find
 python midi_kick.py --kick
 python midi_kick.py --loop
 python midi_kick.py --list
@@ -49,7 +50,6 @@ def _print_device_info():
 def find_id(target='Teensy MIDI'):
 	init()
 	for d in range( get_count() ):
-		info = get_device_info(d)
 		(interf, name, input, out, op) = get_device_info(d)
 		name = str(object=name, encoding='utf-8')
 		if (name == 'Teensy MIDI' and out == 1):
@@ -57,15 +57,20 @@ def find_id(target='Teensy MIDI'):
 	quit()
 	return None
 
+def device_name(id):
+	(interf, name, inp, outp, op) = get_device_info(id)
+	return str(object=name, encoding='utf-8')
 
 def kickit():
 	port = find_id()
 	if (port):
-		print("kick on id", port)
+		print("kick on", device_name(port))
 		midi_out = Output(port, 0)
-		midi_out.note_on(36, 101, channel=10)
+		# Midi raw channel 9 is percussion, most people call it channel 10
+		# pygame passes channel number verbatim
+		midi_out.note_on(36, 101, channel=9)
 		sleep(0.05)
-		midi_out.note_off(36, channel=10)
+		midi_out.note_off(36, channel=9)
 		quit()
 	else:
 		print("no teensy MIDI available")
