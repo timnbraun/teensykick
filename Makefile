@@ -18,7 +18,8 @@ CDEFINES += -D__$(MCU)__ -DARDUINO=10805 -DTEENSYDUINO=144
 CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD $(CDEFINES) \
 	-I$(LIBRARYPATH)/include
 CPPFLAGS += -I$(LIBRARYPATH)/Audio -I$(LIBRARYPATH)/SPI \
-	-I$(LIBRARYPATH)/SD -I$(LIBRARYPATH)/SerialFlash -I$(LIBRARYPATH)/Wire
+	-I$(LIBRARYPATH)/SD -I$(LIBRARYPATH)/SerialFlash -I$(LIBRARYPATH)/Wire \
+	-I$(LIBRARYPATH)/Bounce
 CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti
 CFLAGS =
 ARFLAGS = crvs
@@ -53,7 +54,7 @@ LIBS := -L$(LIB_DIR) -lAudio -lWire $(LIBS)
 
 .PHONY: all load clean
 all: hello_lc.hex hello_midi.hex hello_8211.hex hello_sine.hex \
-	hello_sgt.hex kick.hex
+	hello_sgt.hex hello_timer.hex metronome.hex kick.hex
 
 # CPP_FILES = $(TARGET).cpp analog_stub.cpp usb_write.cpp
 # OBJS = $(addprefix $(OBJ_DIR)/,$(CPP_FILES:.cpp=.o))
@@ -85,6 +86,16 @@ hello_sine.elf: $(OBJ_DIR) $(HS_OBJS) $(LIB_LIST) $(MCU_LD)
 HSGT_OBJS := $(addprefix $(OBJ_DIR)/,hello_sgt.o $(CPP_FILES:.cpp=.o))
 hello_sgt.elf: $(OBJ_DIR) $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD)
 	$(LINK.o) $(HSGT_OBJS) $(LIBS) -o $@
+	@echo built $@
+
+HT_OBJS := $(addprefix $(OBJ_DIR)/,hello_timer.o $(CPP_FILES:.cpp=.o))
+hello_timer.elf: $(OBJ_DIR) $(HT_OBJS) $(LIB_LIST) $(MCU_LD)
+	$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
+	@echo built $@
+
+M_OBJS := $(addprefix $(OBJ_DIR)/,metronome.o $(CPP_FILES:.cpp=.o))
+metronome.elf: $(OBJ_DIR) $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD)
+	$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
 	@echo built $@
 
 K_OBJS := $(addprefix $(OBJ_DIR)/,kick.o $(CPP_FILES:.cpp=.o))
@@ -123,8 +134,8 @@ $(OBJ_DIR)/%.o : %.cpp
 LIB_C_FILES = analog.c mk20dx128.c nonstd.c pins_teensy.c serial1.c
 LIB_C_FILES += usb_desc.c usb_dev.c usb_mem.c usb_midi.c usb_seremu.c usb_serial.c
 LIB_CPP_FILES = AudioStream.cpp DMAChannel.cpp EventResponder.cpp \
-	HardwareSerial.cpp HardwareSerial1.cpp Print.cpp WString.cpp \
-	main.cpp serialEvent.cpp yield.cpp
+	HardwareSerial.cpp HardwareSerial1.cpp IntervalTimer.cpp Print.cpp WString.cpp \
+	i2c_t3.cpp main.cpp serialEvent.cpp yield.cpp
 
 LIB_OBJS := $(LIB_C_FILES:.c=.o) $(LIB_CPP_FILES:.cpp=.o)
 LIB_OBJS := $(addprefix $(OBJ_DIR)/,$(LIB_OBJS))
@@ -159,7 +170,7 @@ $(AUDIO_LIB): $(AUDIO_OBJS)
 	$(AR) $(ARFLAGS) $@ $(AUDIO_OBJS)
 
 WIRE_LIB_CPP_FILES = Wire.cpp WireKinetis.cpp
-WIRE_LIB_C_FILES = 
+WIRE_LIB_C_FILES =
 WIRE_OBJS := $(addprefix $(OBJ_DIR)/,$(WIRE_LIB_C_FILES:.c=.o) \
 	$(WIRE_LIB_CPP_FILES:.cpp=.o))
 
@@ -171,3 +182,17 @@ $(OBJ_DIR)/%.o : $(LIBRARYPATH)/Wire/%.cpp
 
 $(WIRE_LIB): $(WIRE_OBJS)
 	$(AR) $(ARFLAGS) $@ $(WIRE_OBJS)
+
+BOUNCE_LIB_CPP_FILES = Bounce.cpp
+BOUNCE_LIB_C_FILES =
+BOUNCE_OBJS := $(addprefix $(OBJ_DIR)/,$(BOUNCE_LIB_C_FILES:.c=.o) \
+	$(BOUNCE_LIB_CPP_FILES:.cpp=.o))
+
+$(OBJ_DIR)/%.o : $(LIBRARYPATH)/Bounce/%.c
+	$(COMPILE.c) $(OUTPUT_OPTION) $<
+
+$(OBJ_DIR)/%.o : $(LIBRARYPATH)/Bounce/%.cpp
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+$(BOUNCE_LIB): $(BOUNCE_OBJS)
+	$(AR) $(ARFLAGS) $@ $(BOUNCE_OBJS)
