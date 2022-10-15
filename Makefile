@@ -65,42 +65,42 @@ all: hello_lc.hex hello_midi.hex hello_8211.hex hello_sine.hex \
 CPP_FILES := analog_stub.cpp usb_write.cpp
 HM_OBJS := $(addprefix $(OBJDIR)/,hello_midi.o $(CPP_FILES:.cpp=.o))
 hello_midi.elf: $(OBJDIR) $(HM_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HL_OBJS := $(addprefix $(OBJDIR)/,hello_lc.o $(CPP_FILES:.cpp=.o))
 hello_lc.elf: $(OBJDIR) $(HL_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 H8_OBJS := $(addprefix $(OBJDIR)/,hello_8211.o $(CPP_FILES:.cpp=.o))
 hello_8211.elf: $(OBJDIR) $(H8_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(H8_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(H8_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HS_OBJS := $(addprefix $(OBJDIR)/,hello_sine.o $(CPP_FILES:.cpp=.o))
 hello_sine.elf: $(OBJDIR) $(HS_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(HS_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(HS_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HSGT_OBJS := $(addprefix $(OBJDIR)/,hello_sgt.o $(CPP_FILES:.cpp=.o))
 hello_sgt.elf: $(OBJDIR) $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(HSGT_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(HSGT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HT_OBJS := $(addprefix $(OBJDIR)/,hello_timer.o $(CPP_FILES:.cpp=.o))
 hello_timer.elf: $(OBJDIR) $(HT_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 M_OBJS := $(addprefix $(OBJDIR)/,metronome.o $(CPP_FILES:.cpp=.o))
 metronome.elf: $(OBJDIR) $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD)
-	$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
+	@$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
 	@echo built $@
 
 K_OBJS := $(addprefix $(OBJDIR)/,kick.o $(CPP_FILES:.cpp=.o))
 kick.elf: $(OBJDIR) $(K_OBJS) $(LIB_LIST) $(MCU_LD)
-	$(LINK.o) $(K_OBJS) $(LIBS) -o $@
+	@$(LINK.o) $(K_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 # Create final output file (.hex) from ELF output file.
@@ -109,7 +109,7 @@ kick.elf: $(OBJDIR) $(K_OBJS) $(LIB_LIST) $(MCU_LD)
 	@$(SIZE) $<
 	@echo
 	@echo Converting $@ from $<
-	$(OBJCOPY) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
+	@$(OBJCOPY) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
 	@echo
 
 load: $(TARGET).hex
@@ -126,9 +126,11 @@ $(LIBDIR): ; $(MKDIR) $@
 $(LIB_LIST) : $(LIBDIR)
 
 $(OBJDIR)/%.o : %.c
-	$(COMPILE.c) $(OUTPUT_OPTION) $<
+	@echo Building $@ from $<
+	@$(COMPILE.c) $(OUTPUT_OPTION) $<
 
 $(OBJDIR)/%.o : %.cpp
-	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+	@echo Building $@ from $<
+	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 include $(LIBRARYPATH)/libraries.mak
