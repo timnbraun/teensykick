@@ -78,39 +78,39 @@ ${BUILDDIR}/hello_midi.elf: $(OBJDIR) $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILD
 	@echo built $@
 
 HL_OBJS := $(addprefix $(OBJDIR)/,hello_lc.o $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_lc.elf: $(OBJDIR) $(HL_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_lc.elf: $(HL_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 H8_OBJS := $(addprefix $(OBJDIR)/,hello_8211.o $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_8211.elf: $(OBJDIR) $(H8_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_8211.elf: $(H8_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(H8_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HS_OBJS := $(addprefix $(OBJDIR)/,hello_sine.o $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_sine.elf: $(OBJDIR) $(HS_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_sine.elf: $(HS_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HS_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HSGT_OBJS := $(addprefix $(OBJDIR)/,hello_sgt.o $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_sgt.elf: $(OBJDIR) $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_sgt.elf: $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HSGT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 HT_OBJS := $(addprefix $(OBJDIR)/,hello_timer.o $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_timer.elf: $(OBJDIR) $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_timer.elf: $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 METRONOME_CPP := metronome.cpp
 M_OBJS := $(addprefix $(OBJDIR)/,$(METRONOME_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/metronome.elf: $(OBJDIR) $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/metronome.elf: $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
 	@echo built $@
 
 KICK_CPP := kick.cpp AudioSampleKick.cpp
 K_OBJS := $(addprefix $(OBJDIR)/,$(KICK_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/kick.elf: $(OBJDIR) $(K_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/kick.elf: $(K_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(K_OBJS) $(LIBS) -o $@
 	@echo built $@ ${GIT_VERSION}
 
@@ -131,13 +131,13 @@ clean:
 	-rm -rf $(OBJDIR) ${LIBOBJDIR} $(LIBDIR) ${BUILDDIR}
 
 $(OBJDIR) $(LIBDIR) $(LIBOBJDIR) $(BUILDDIR) : ; $(MKDIR) $@
-$(LIB_LIST) : $(LIBDIR)
+$(LIB_LIST) : | $(LIBDIR)
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : %.c | ${OBJDIR}
 	@echo Building $@ from $<
 	@$(COMPILE.c) $(OUTPUT_OPTION) $<
 
-$(OBJDIR)/%.o : %.cpp
+$(OBJDIR)/%.o : %.cpp | ${OBJDIR}
 	@echo Building $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
