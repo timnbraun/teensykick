@@ -28,8 +28,12 @@
  * SOFTWARE.
  */
 
+#define USE_SAMPLE
 #include <Audio.h>
 #include <usb_dev.h>
+#if defined(USE_SAMPLE)
+#include "AudioSampleKick.h"
+#endif
 
 #define dbg_putc(c) \
 	fputc((c), stderr)
@@ -38,10 +42,17 @@ void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
 
 AudioControlSGTL5000	dac;
-AudioSynthSimpleDrum	kick;
 AudioOutputI2S        	out;
-AudioConnection         patchCord1(kick, 0, out, 0);
-AudioConnection       	patchCord2(kick, 0, out, 1);
+AudioAmplifier			gain;
+#if defined(USE_SAMPLE)
+AudioPlayMemory			kickSample;
+AudioConnection         patchCord1(kickSample, 0, gain, 0);
+#else
+AudioSynthSimpleDrum	kick;
+AudioConnection         patchCord1(kick, 0, gain, 0);
+#endif
+AudioConnection			patchCord3(gain, 0, out, 0);
+AudioConnection			patchCord4(gain, 0, out, 1);
 
 usb_serial_class 		Serial;
 elapsedMillis 			since_LED_switch, since_hello;
@@ -61,11 +72,14 @@ void setup()
 
 	delay(1000);
 	AudioMemory(2);
+#if defined(USE_SAMPLE)
+#else
 	kick.frequency(80);
 	kick.length(200);
 	kick.secondMix(0.25);
 	kick.pitchMod(0x2f0); // 0x200 is no mod...
-	dbg("\r\nHello teensy kick\r\n\r\n");
+#endif
+	dbg("\r\nHello teensy kick " TEENSYKICK_VERSION "\r\n\r\n");
 	dac.enable();
 	dac.lineOutLevel( 14 );
 }
@@ -79,14 +93,18 @@ void loop()
 		since_LED_switch = 0;
 	}
 	if (since_hello >= 1000) {
-		dbg(".");
+		// dbg(".");
 		if (++counter >= 10) {
+			/*
+			 * This is code to verify the audio servicing interrupts
+			 *
 			uint32_t this_count = out.isrCount();
 			interrupts_delta = this_count - interrupts_last;
 			interrupts_last = this_count;
 			dbg(" isr=%4lu %5lu %3lu\r\n", interrupts_delta,
-				(uint32_t)interrupt_time, bigtime++);
+					(uint32_t)interrupt_time, bigtime++);
 			interrupt_time = 0;
+			 */
 			counter = 0;
 		}
 		since_hello = 0;
@@ -95,16 +113,26 @@ void loop()
 		int incoming = Serial.read();
 		switch (incoming) {
 		case 'b':
+#if defined(USE_SAMPLE)
+#else
 			dbg("drum used %u cycles\r\n", kick.cpu_cycles_total );
+#endif
 		break;
 		case ' ':
 			run = !run;
 			dbg("now %s\r\n", run? "running" : "stopped");
 			if (run) {
+#if defined(USE_SAMPLE)
+				kickSample.play(AudioSampleKick);
+#else
 				kick.noteOn();
+#endif
 			}
 			else {
+#if defined(USE_SAMPLE)
+#else
 				kick.noteOn(0x6000);
+#endif
 			}
 		break;
 		case 'l':
@@ -117,9 +145,12 @@ void loop()
 			levelHigh = !levelHigh;
 			dbg("level now %s\r\n", levelHigh? "high" : "low");
 		break;
-		case 'r':
-			_reboot_Teensyduino_();
+		case 'v':
+			fiprintf(stderr, "\r\nHello teensy kick " TEENSYKICK_VERSION "\r\n\r\n");
 		break;
+		// case 'r':
+		// 	_reboot_Teensyduino_();
+		// break;
 		default:
 			dbg_putc(incoming);
 		}
@@ -132,7 +163,11 @@ void onNoteOn(byte chan, byte note, byte vel)
 {
 	uint32_t v = vel << 8;
 	dbg("N %d on %lu\r\n", note, v);
+#if defined(USE_SAMPLE)
+	kickSample.play(AudioSampleKick);
+#else
 	kick.noteOn(v);
+#endif
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
