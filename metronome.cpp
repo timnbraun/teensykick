@@ -32,6 +32,10 @@
 #include <Bounce.h>
 #include <IntervalTimer.h>
 #include <usb_dev.h>
+#include "AudioSampleKiddykick.h"
+
+#define printf( ... ) \
+	fiprintf(stdout, __VA_ARGS__ )
 
 #define dbg_putc(c) \
 	fputc((c), stderr)
@@ -43,8 +47,10 @@ public:
 	static void onTick();
 	void start(uint32_t bpdm = 1200)
 	{
+		dbg("Starting metronome at %lu bpdm, beat time is %lu usec\n", bpdm,
+			(1000000 * 600) / bpdm );
 		if (bpdm > 0 && bpdm < 4000)
-			beatTimer.begin(onTick, 1000000 / bpdm * 6 );
+			beatTimer.begin(onTick, (1000000 * 600) / bpdm );
 		this->bpdm = bpdm;
 	}
 	void stop()
@@ -64,8 +70,11 @@ void onNoteOff(byte chan, byte note, byte vel);
 Metronome				metronome;
 AudioControlSGTL5000	dac;
 AudioSynthSimpleDrum	click;
+AudioPlayMemory			kickSample;
 AudioOutputI2S        	out;
-AudioConnection         patchCord1(click, 0, out, 0);
+// AudioConnection         patchCord1(click, 0, out, 0);
+AudioConnection         patchCord1(kickSample, 0, out, 0);
+AudioConnection         patchCord2(kickSample, 0, out, 1);
 Bounce					tempo = Bounce(0, 5);
 
 usb_serial_class 		Serial;
@@ -92,7 +101,7 @@ void setup()
 	click.length(200);
 	click.secondMix(0.25);
 	click.pitchMod(0x2f0); // 0x200 is no mod...
-	dbg("\r\nHello teensy click\r\n\r\n");
+	printf("\nHello teensy click " TEENSYKICK_VERSION "\n\n");
 	dac.enable();
 	dac.lineOutLevel( 14 );
 }
@@ -107,15 +116,16 @@ void loop()
 		since_LED_switch = 0;
 	}
 	if (since_hello >= 1000) {
-		dbg(".");
+		// dbg(".");
 		if (++counter >= 10) {
 			uint32_t this_count = out.isrCount();
 			interrupts_delta = this_count - interrupts_last;
 			interrupts_last = this_count;
-			dbg(" isr=%4lu %5lu %3lu\r\n", interrupts_delta,
-				(uint32_t)interrupt_time, bigtime++);
+			// dbg(" isr=%4lu %5lu %3lu\n", interrupts_delta,
+			// 	(uint32_t)interrupt_time, bigtime);
 			interrupt_time = 0;
 			counter = 0;
+			bigtime++;
 		}
 		since_hello = 0;
 	}
@@ -123,14 +133,14 @@ void loop()
 		int incoming = Serial.read();
 		switch (incoming) {
 		case 'b':
-			dbg("drum used %u cycles\r\n", click.cpu_cycles_total );
+			dbg("drum used %u cycles\n", click.cpu_cycles_total );
 		break;
 		case ' ':
 			break;
 		case 'r':
 		case 'g':
 			run = !run;
-			dbg("now %s\r\n", run? "running" : "stopped");
+			dbg("now %s\n", run? "running" : "stopped");
 			if (run) {
 				click.noteOn();
 			}
@@ -146,22 +156,27 @@ void loop()
 				dac.lineOutLevel( 14 );
 			}
 			levelHigh = !levelHigh;
-			dbg("level now %s\r\n", levelHigh? "high" : "low");
+			dbg("level now %s\n", levelHigh? "high" : "low");
 		break;
 		case 'm':
 			if (metronome_running) {
-				dbg("stopping metronome\r\n");
+				dbg("stopping metronome\n");
 				metronome.stop();
 			}
 			else {
-				dbg("starting metronome\r\n");
+				dbg("starting metronome\n");
 				metronome.start(1000);
 			}
 			metronome_running = !metronome_running;
 			break;
+		case 'v':
+			printf("\nteensy click " TEENSYKICK_VERSION "\n\n");
+			break;
 		// case 'r':
 		// 	_reboot_Teensyduino_();
 		// break;
+		case '\n':
+			break;
 		default:
 			dbg_putc(incoming);
 		}
@@ -212,37 +227,39 @@ void loop()
 				tempo = 60000 / delta;
 			}
 
-			dbg("delta is %lu, %lu bpdm\r\n", delta, tempo);
+			dbg("delta is %lu, %lu bpdm\n", delta, tempo);
 		}
 	}
 }
 
 void Metronome::onTick()
 {
-	static uint8_t beat;
+	static uint8_t beat = 1;
 
 	digitalToggleFast(LED_BUILTIN);
 
-	if (++beat == 1) {
-		click.noteOn(127 << 8);
-		dbg_putc('1');
+	dbg_putc(beat + '0');
+	if (beat++ == 1) {
+		// click.noteOn(127 << 8);
+		kickSample.play(AudioSampleKiddykick);
 	}
 	else {
-		click.noteOn(101 << 8);
-		dbg_putc(beat + '0');
-		if (beat >= 4)
-			beat = 0;
+		// click.noteOn(101 << 8);
+		kickSample.play(AudioSampleKiddykick);
+		if (beat > 4)
+			beat = 1;
 	}
 }
 
 void onNoteOn(byte chan, byte note, byte vel)
 {
 	uint32_t v = vel << 8;
-	dbg("N %d on %lu\r\n", note, v);
+	dbg("N %d on %lu\n", note, v);
 	click.noteOn(v);
+	kickSample.play(AudioSampleKiddykick);
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
 {
-	dbg("N %d off\r\n", note);
+	dbg("N %d off\n", note);
 }
