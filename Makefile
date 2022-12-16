@@ -69,9 +69,9 @@ all: $(addprefix ${BUILDDIR}/,hello_lc.hex hello_midi.hex hello_8211.hex hello_s
 # 	$(LINK.o) $(OBJS) $(LIBS) -o $@
 # 	@echo built $@
 
-CPP_FILES := analog_stub.cpp usb_write.cpp
+CPP_FILES := usb_write.cpp
 
-HELLO_MIDI_CPP := hello_midi.cpp
+HELLO_MIDI_CPP := hello_midi.cpp analog_stub.cpp
 HM_OBJS := $(addprefix $(OBJDIR)/,$(HELLO_MIDI_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_midi.elf: $(OBJDIR) $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
@@ -102,7 +102,7 @@ ${BUILDDIR}/hello_timer.elf: $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
-METRONOME_CPP := metronome.cpp
+METRONOME_CPP := metronome.cpp analog_stub.cpp
 M_OBJS := $(addprefix $(OBJDIR)/,$(METRONOME_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/metronome.elf: $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
