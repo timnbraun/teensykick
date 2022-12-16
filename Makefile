@@ -1,16 +1,16 @@
 #
 # Makefile for teensykick
 
-LIBRARYPATH = ../teensy-duino
+LIBRARYPATH := ../teensy-duino
 
 TEENSYLC := 1
-MCU = MKL26Z64
-CPUARCH = cortex-m0plus
+MCU      := MKL26Z64
+CPUARCH  := cortex-m0plus
 
-MCU_LD = $(LIBRARYPATH)/mkl26z64.ld
-LIBS = -L$(LIBRARYPATH) -lteensy-lc
+MCU_LD   := $(LIBRARYPATH)/mkl26z64.ld
+LIBS     := -L$(LIBRARYPATH) -lteensy-lc
 
-CDEFINES = -DF_CPU=48000000 -DUSB_MIDI_SERIAL
+CDEFINES := -DF_CPU=48000000 -DUSB_MIDI_SERIAL
 
 # options needed by many Arduino libraries to configure for Teensy 3.x
 CDEFINES += -D__$(MCU)__ -DARDUINO=10805 -DTEENSYDUINO=144
@@ -73,7 +73,7 @@ CPP_FILES := usb_write.cpp
 
 HELLO_MIDI_CPP := hello_midi.cpp analog_stub.cpp
 HM_OBJS := $(addprefix $(OBJDIR)/,$(HELLO_MIDI_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
-${BUILDDIR}/hello_midi.elf: $(OBJDIR) $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+${BUILDDIR}/hello_midi.elf: $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
 	@echo built $@
 
@@ -102,13 +102,13 @@ ${BUILDDIR}/hello_timer.elf: $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
 	@echo built $@
 
-METRONOME_CPP := metronome.cpp analog_stub.cpp
+METRONOME_CPP := metronome.cpp analog_stub.cpp AudioSampleKiddykick.cpp
 M_OBJS := $(addprefix $(OBJDIR)/,$(METRONOME_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/metronome.elf: $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
 	@echo built $@
 
-KICK_CPP := kick.cpp AudioSampleKick.cpp
+KICK_CPP := kick.cpp piezoTrigger.cpp AudioSampleKiddykick.cpp
 K_OBJS := $(addprefix $(OBJDIR)/,$(KICK_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/kick.elf: $(K_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(K_OBJS) $(LIBS) -o $@
@@ -140,6 +140,10 @@ $(OBJDIR)/%.o : %.c | ${OBJDIR}
 $(OBJDIR)/%.o : %.cpp | ${OBJDIR}
 	@echo Building $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+AudioSampleKiddykick.cpp : KiddyKick.wav
+	@echo Generating $@ from $<
+	wav2sketch -16 $<
 
 include $(LIBRARYPATH)/libraries.mak
 
