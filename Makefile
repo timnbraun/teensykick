@@ -37,12 +37,6 @@ RANLIB  = $(CROSS_COMPILE)ranlib
 
 MKDIR   = mkdir -p
 
-TEENSY_LIB = $(LIBDIR)/libteensy-lc.a
-BOUNCE_LIB = $(LIBDIR)/libBounce.a
-AUDIO_LIB  = $(LIBDIR)/libAudio.a
-SPI_LIB    = $(LIBDIR)/libSPI.a
-WIRE_LIB   = $(LIBDIR)/libWire.a
-LIB_LIST   = $(TEENSY_LIB) $(AUDIO_LIB) $(WIRE_LIB)
 OBJDIR = obj
 LIBDIR = lib
 LIBOBJDIR = ${LIBDIR}/obj
@@ -53,11 +47,17 @@ GIT_DIRTY := $(shell test -n "`git diff-index --name-only HEAD`" && echo '-dirty
 GIT_VERSION := $(shell git describe --tags || echo -n 'V0.NO-GIT')$(GIT_DIRTY)
 CDEFINES += -DTEENSYKICK_VERSION=\"${GIT_VERSION}\"
 
-# TARGET = hello_sgt
-TARGET = kick
-# CPP_FILES = kick.cpp AudioSampleKick.cpp
+TEENSY_LIB = $(LIBDIR)/libteensy-lc.a
+BOUNCE_LIB = $(LIBDIR)/libBounce.a
+AUDIO_LIB  = $(LIBDIR)/libAudio.a
+SPI_LIB    = $(LIBDIR)/libSPI.a
+WIRE_LIB   = $(LIBDIR)/libWire.a
+LIB_LIST   = $(TEENSY_LIB) $(AUDIO_LIB) $(WIRE_LIB)
 
-LIBS := -L$(LIBDIR) -lAudio -lWire $(LIBS)
+LIBS := -L$(LIBDIR) $(subst lib/lib,-l,$(LIB_LIST:.a=)) $(LIBS)
+
+TARGET = kick
+
 
 .PHONY: all load clean upload
 all: $(addprefix ${BUILDDIR}/,hello_lc.hex hello_midi.hex hello_8211.hex hello_sine.hex \
