@@ -28,12 +28,13 @@
  * SOFTWARE.
  */
 
-#define USE_SAMPLE
+
+#include <Arduino.h>
 #include <Audio.h>
 #include <usb_dev.h>
-#if defined(USE_SAMPLE)
+
+
 #include "AudioSampleKiddykick.h"
-#endif
 #include "piezoTrigger.h"
 #include "play_memory2.h"
 
@@ -53,16 +54,11 @@ AudioControlSGTL5000	dac;
 AudioOutputI2S        	out;
 AudioAmplifier			gain_l;
 AudioAmplifier			gain_r;
-#if defined(USE_SAMPLE)
+
 AudioPlayMemory2			kickSample;
 // AudioPlayMemory			kickSample;
 AudioConnection         patchCord1_l(kickSample, 0, gain_l, 0);
 AudioConnection         patchCord1_r(kickSample, 0, gain_r, 0);
-#else
-AudioSynthSimpleDrum	kick;
-AudioConnection         patchCord1_l(kick, gain_l);
-AudioConnection         patchCord1_r(kick, gain_r);
-#endif
 AudioConnection			patchCord3(gain_l, 0, out, 0);
 // AudioConnection			patchCord3(kickSample, 0, out, 0);
 AudioConnection			patchCord4(gain_r, 0, out, 1);
@@ -97,13 +93,6 @@ void setup()
 
 	// Audio component setup
 	AudioMemory(6);
-#if defined(USE_SAMPLE)
-#else
-	kick.frequency(80);
-	kick.length(200);
-	kick.secondMix(0.25);
-	kick.pitchMod(0x2f0); // 0x200 is no mod...
-#endif
 	dac.enable();
 	dac.lineOutLevel( 14 );
 
@@ -148,29 +137,16 @@ void loop()
 		case 'a':
 			printf("Audio used %u buffers\n", AudioMemoryUsageMax() );
 		break;
-#if defined(USE_SAMPLE)
-#else
-		case 'b':
-			printf("drum used %u cycles\n", kick.cpu_cycles_total );
-		break;
-#endif
 
 		case ' ':
 			run = !run;
 			printf("now %s\n", run? "running" : "stopped");
 			if (run) {
-#if defined(USE_SAMPLE)
+
 				kickSample.play(AudioSampleKiddykick);
-#else
-				kick.noteOn();
-#endif
+
 			}
-			else {
-#if defined(USE_SAMPLE)
-#else
-				kick.noteOn(0x6000);
-#endif
-			}
+
 		break;
 
 		// Adjust the gain
@@ -228,12 +204,8 @@ void loop()
 void onNoteOn(byte chan, byte note, byte vel)
 {
 	dbg("N ch=%u %u( %u ) on\n", chan, note, vel);
-#if defined(USE_SAMPLE)
+
 	kickSample.play(AudioSampleKiddykick);
-#else
-	uint32_t v = vel << 8;
-	kick.noteOn(v);
-#endif
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
@@ -243,10 +215,6 @@ void onNoteOff(byte chan, byte note, byte vel)
 
 void onPiezoTrigger(uint32_t vel)
 {
-	dbg("PiezoTrigger %4lu\n", vel);
-#if defined(USE_SAMPLE)
+	dbg("PiezoTrigger %4lu %4lu\n\n", vel, millis());
 	kickSample.play(AudioSampleKiddykick);
-#else
-	kick.noteOn(vel);
-#endif
 }
