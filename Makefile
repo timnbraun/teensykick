@@ -6,20 +6,23 @@ LIBRARYPATH := ../teensy-duino
 TEENSYLC := 1
 MCU      := MKL26Z64
 CPUARCH  := cortex-m0plus
+PLATFORM := teensy3
 
 MCU_LD   := $(LIBRARYPATH)/mkl26z64.ld
-LIBS     := -L$(LIBRARYPATH) -lteensy-lc
+# LIBS     := -L$(LIBRARYPATH) -lteensy-lc
 
 CDEFINES := -DF_CPU=48000000 -DUSB_MIDI_SERIAL
 
 # options needed by many Arduino libraries to configure for Teensy 3.x
-CDEFINES += -D__$(MCU)__ -DARDUINO=10805 -DTEENSYDUINO=144
+CDEFINES += -D__$(MCU)__ -DARDUINO=10813 -DTEENSYDUINO=157 \
+	-DLAYOUT_US_ENGLISH
 
 CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD $(CDEFINES) \
 	-I$(LIBRARYPATH)/include
 CPPFLAGS += -I$(LIBRARYPATH)/Audio -I$(LIBRARYPATH)/SPI \
-	-I$(LIBRARYPATH)/SD -I$(LIBRARYPATH)/SerialFlash -I$(LIBRARYPATH)/Wire \
-	-I$(LIBRARYPATH)/Bounce
+	-I$(LIBRARYPATH)/SD -I$(LIBRARYPATH)/SerialFlash \
+	-I$(LIBRARYPATH)/Bounce -I${HARDWARE_ROOT}/libraries/i2c_t3 \
+	-I$(LIBRARYPATH)/Wire
 CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti
 CFLAGS =
 ARFLAGS = crvs
@@ -52,7 +55,8 @@ BOUNCE_LIB = $(LIBDIR)/libBounce.a
 AUDIO_LIB  = $(LIBDIR)/libAudio.a
 SPI_LIB    = $(LIBDIR)/libSPI.a
 WIRE_LIB   = $(LIBDIR)/libWire.a
-LIB_LIST   = $(TEENSY_LIB) $(AUDIO_LIB) $(WIRE_LIB)
+I2C_LIB    = $(LIBDIR)/libi2c_t3.a
+LIB_LIST   = $(AUDIO_LIB) $(WIRE_LIB) $(TEENSY_LIB)
 
 LIBS := -L$(LIBDIR) $(subst lib/lib,-l,$(LIB_LIST:.a=)) $(LIBS)
 
@@ -60,8 +64,9 @@ TARGET = kick
 
 
 .PHONY: all load clean upload
-all: $(addprefix ${BUILDDIR}/,hello_lc.hex hello_midi.hex hello_8211.hex hello_sine.hex \
-	hello_sgt.hex hello_timer.hex metronome.hex kick.hex) | ${BUILDDIR}
+all: $(addprefix ${BUILDDIR}/,hello_lc.hex hello_midi.hex hello_8211.hex \
+	hello_sine.hex hello_sgt.hex hello_timer.hex metronome.hex kick.hex) \
+	| ${BUILDDIR}
 
 # CPP_FILES = $(TARGET).cpp analog_stub.cpp usb_write.cpp
 # OBJS = $(addprefix $(OBJDIR)/,$(CPP_FILES:.cpp=.o))
@@ -114,6 +119,12 @@ ${BUILDDIR}/kick.elf: $(K_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(K_OBJS) $(LIBS) -o $@
 	@echo built $@ ${GIT_VERSION}
 
+KICK_SYNTH_CPP := kick_synth.cpp piezoTrigger.cpp
+K_S_OBJS := $(addprefix $(OBJDIR)/,$(KICK_SYNTH_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
+${BUILDDIR}/kick_synth.elf: $(K_S_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+	@$(LINK.o) $(K_S_OBJS) $(LIBS) -o $@
+	@echo built $@ ${GIT_VERSION}
+
 # Create final output file (.hex) from ELF output file.
 ${BUILDDIR}/%.hex: ${BUILDDIR}/%.elf | ${BUILDDIR}
 	@echo
@@ -145,7 +156,8 @@ AudioSampleKiddykick.cpp : KiddyKick.wav
 	@echo Generating $@ from $<
 	wav2sketch -16 $<
 
-include $(LIBRARYPATH)/libraries.mak
+include libs.mak
+# include $(LIBRARYPATH)/libraries.mak
 
 -include $(wildcard $(OBJDIR)/*.d)
 -include $(wildcard $(LIBOBJDIR)/*.d)
