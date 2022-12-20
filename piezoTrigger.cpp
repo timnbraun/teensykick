@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <Arduino.h>
+#include <elapsedMillis.h>
 #include "piezoTrigger.h"
 
 #define ANALOG_DEFAULT_REFERENCE 1000
@@ -28,11 +29,8 @@ void piezoTrigger::setup()
 
 void piezoTrigger::loop()
 {
-	static uint32_t timeStamp = 0;
 	static uint32_t sample_count = 0;
 	uint32_t t_mv;
-
-	uint32_t now = millis(), elapsed = now - timeStamp;
 
 	t_mv = analogRead(piezoInput) * 3300 * 
 		(ANALOG_DEFAULT_REFERENCE / 1000.0) / 4095;
@@ -50,20 +48,42 @@ void piezoTrigger::loop()
 	//  (y3 + y2 + y1) / 3 + (y3 - y1) / 2
 	//
 	////
-	if ((t_mv > 400) && ((sample_count < 1) || (elapsed > 10))) {
-		sample_count++;
-		timeStamp = now;
-		printf( "trigger = %5lu\n", t_mv);
-		// if (sample_count == 1) {
-			func( t_mv );
-		// }
+	if ((t_mv > threshhold_mv) && !fired) {
+
+		if (sample_count < NUM_SAMPLES) {
+			// printf( "sample = %5lu, %2lu\n", t_mv, sample_count );
+			samples[sample_count++] = t_mv;
+		}
+
+		if (sample_count == NUM_SAMPLES) {
+
+			uint32_t trig = 0;
+			for (unsigned i = 0; i < NUM_SAMPLES; i++)
+				trig += samples[i];
+			trig /= NUM_SAMPLES;
+
+			uint32_t slope = (samples[NUM_SAMPLES - 1] > samples[0]?
+				samples[NUM_SAMPLES - 1] - samples[0] : 0) / 2;
+
+			trig += slope;
+
+			// printf( "trigger = %5lu, %4ld %ld\n", t_mv, trig, slope );
+
+			func( trig );
+			fired = true;
+			trigger_time = 0;
+		}
+	}
+
+	else if ((t_mv < threshhold_mv) && (trigger_time > holdoff_msec)) {
+		fired = false;
+		sample_count = 0;
 	}
 
 	if (testing) {
-		if (elapsed > 1000) {
+		if (test_time > 1000) {
 			printf( "t_mv = %5lu\n", t_mv);
-			sample_count = 0;
-			timeStamp = now;
+			test_time = 0;
 		}
 	}
 }

@@ -16,14 +16,25 @@
 
 class piezoTrigger
 {
-	uint32_t	piezoInput;
-	uint32_t	timeStamp;
-	bool		testing;
-	void		(*func)(uint32_t velocity);
+	// Some configuration constants
+	const static uint32_t threshhold_mv = 600;	// sample has to pass this
+												// value to be a trigger
+	const static uint32_t holdoff_msec  = 150;	// no re-triggering before this
+	const static uint32_t NUM_SAMPLES   =   3;
+
+	uint32_t		piezoInput;
+	elapsedMillis	trigger_time;
+	bool			fired;
+
+	void (*func)(uint32_t	velocity);
+	uint32_t		samples[NUM_SAMPLES];
+
+	elapsedMillis	test_time;
+	bool			testing;
 
 	public:
 		piezoTrigger(uint32_t input, void (*f)(uint32_t)) : piezoInput(input), 
-			timeStamp(0), testing(false), func(f) {};
+			fired(false), func(f), testing(false) {};
 		~piezoTrigger() {};
 
 		void	setup();
