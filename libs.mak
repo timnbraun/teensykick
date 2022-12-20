@@ -5,10 +5,10 @@
 ARDUINO_ROOT ?= ${HOME}/.arduino15
 HARDWARE_ROOT ?= ${ARDUINO_ROOT}/packages/teensy/hardware/avr/1.57.1
 
-CORE_SRC_CPP = $(wildcard ${HARDWARE_ROOT}/cores/${PLATFORM}/*.cpp)
+# CORE_SRC_CPP = $(wildcard ${HARDWARE_ROOT}/cores/${PLATFORM}/*.cpp)
 
-LIB_C_FILES = analog.c mk20dx128.c nonstd.c pins_teensy.c serial1.c
-LIB_C_FILES += usb_desc.c usb_dev.c usb_inst.c usb_mem.c usb_midi.c \
+LIB_C_FILES = analog.c mk20dx128.c nonstd.c pins_teensy.c serial1.c \
+	usb_desc.c usb_dev.c usb_inst.c usb_mem.c usb_midi.c \
 	usb_seremu.c usb_serial.c
 LIB_CPP_FILES = AudioStream.cpp DMAChannel.cpp EventResponder.cpp \
 	HardwareSerial.cpp HardwareSerial1.cpp IntervalTimer.cpp Print.cpp \
@@ -20,11 +20,14 @@ LIBOBJDIR ?= ${OBJDIR}
 CORE_OBJ := $(LIB_C_FILES:.c=.o) $(LIB_CPP_FILES:.cpp=.o)
 CORE_OBJ := $(addprefix $(LIBOBJDIR)/,$(CORE_OBJ))
 
-$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/cores/${PLATFORM}/%.c | ${LIBOBJDIR}
+# CORE_SRC_PATH := ${HARDWARE_ROOT}/cores/${PLATFORM}
+CORE_SRC_PATH := ${LIBRARYPATH}/src
+
+$(LIBOBJDIR)/%.o : ${CORE_SRC_PATH}/%.c | ${LIBOBJDIR}
 	@echo Compiling $@ from $(notdir $<)
 	@$(COMPILE.c) $(OUTPUT_OPTION) $<
 
-$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/cores/${PLATFORM}/%.cpp | ${LIBOBJDIR}
+$(LIBOBJDIR)/%.o : ${CORE_SRC_PATH}/%.cpp | ${LIBOBJDIR}
 	@echo Compiling $@ from $(notdir $<)
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
@@ -57,7 +60,7 @@ $(AUDIO_LIB): $(AUDIO_OBJS) | ${LIBDIR}
 	@$(AR) $(ARFLAGS) $@ $(AUDIO_OBJS)
 
 BOUNCE_LIB_CPP_FILES = Bounce.cpp
-BOUNCE_LIB_C_FILES = 
+BOUNCE_LIB_C_FILES =
 BOUNCE_OBJS := $(addprefix $(LIBOBJDIR)/,$(BOUNCE_LIB_C_FILES:.c=.o) \
 	$(BOUNCE_LIB_CPP_FILES:.cpp=.o))
 
@@ -74,7 +77,7 @@ $(BOUNCE_LIB): $(BOUNCE_OBJS) | ${LIBDIR}
 	@$(AR) $(ARFLAGS) $@ $(BOUNCE_OBJS)
 
 WIRE_LIB_CPP_FILES = Wire.cpp WireKinetis.cpp
-WIRE_LIB_C_FILES = 
+WIRE_LIB_C_FILES =
 WIRE_OBJS := $(addprefix $(LIBOBJDIR)/,$(WIRE_LIB_C_FILES:.c=.o) \
 	$(WIRE_LIB_CPP_FILES:.cpp=.o))
 
