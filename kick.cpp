@@ -56,13 +56,11 @@ AudioAmplifier			gain_l;
 AudioAmplifier			gain_r;
 
 AudioPlayMemory2			kickSample;
-// AudioPlayMemory			kickSample;
+
 AudioConnection         patchCord1_l(kickSample, 0, gain_l, 0);
-AudioConnection         patchCord1_r(kickSample, 0, gain_r, 0);
+AudioConnection         patchCord1_r(kickSample, 1, gain_r, 0);
 AudioConnection			patchCord3(gain_l, 0, out, 0);
-// AudioConnection			patchCord3(kickSample, 0, out, 0);
 AudioConnection			patchCord4(gain_r, 0, out, 1);
-// AudioConnection			patchCord4(kickSample, 0, out, 1);
 
 usb_serial_class 		Serial;
 elapsedMillis 			since_LED_switch, since_hello;
