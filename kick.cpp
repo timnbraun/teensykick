@@ -38,7 +38,7 @@
 #include "piezoTrigger.h"
 #include "play_memory2.h"
 
-#define TAP_INPUT                  14
+#define TAP_INPUT                  A7
 
 #define dbg_putc(c) \
 	fputc((c), stderr)
@@ -63,13 +63,9 @@ AudioConnection			patchCord3(gain_l, 0, out, 0);
 AudioConnection			patchCord4(gain_r, 0, out, 1);
 
 usb_serial_class 		Serial;
-elapsedMillis 			since_LED_switch, since_hello;
-elapsedMillis			interrupt_time;
+elapsedMillis 			since_LED_switch, since_kick;
 
 piezoTrigger			piezo(TAP_INPUT, onPiezoTrigger);
-
-uint32_t		counter, bigtime;
-uint32_t		interrupts_last, interrupts_delta;
 
 
 //////////////////////////////
@@ -82,52 +78,54 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+	delay(100);
 
 	// Midi setup
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	usbMIDI.setHandleNoteOff(onNoteOff);
 
-	delay(1000);
+	delay(2000);
 
 	// Audio component setup
 	AudioMemory(6);
 	dac.enable();
 	dac.lineOutLevel( 14 );
+	digitalWrite(LED_BUILTIN, HIGH);
+
+	delay(1000);
+	dbg("Audio init\n");
+	digitalWrite(LED_BUILTIN, LOW);
 
 	kickSample.invertPhase(1, true);
+
+	delay(100);
+	dbg("Sample init\n");
+
 	gain_l.gain(0.5);
 	gain_r.gain(0.5);
 
+	delay(100);
+	dbg("Gain init\n");
+
 	piezo.setup();
 
-	dbg("\nHello teensy kick " TEENSYKICK_VERSION "\n\n");
+	delay(100);
+	dbg("\nHello teensy kick " TEENSYKICK_VERSION " " BUILD_DATE "\n\n");
 }
 
 void loop()
 {
-	static bool run = true, levelHigh = true;
+	static bool run = true, levelHigh = true, metronome = false;
 	static float gain = 1.0f;
 
 	if (since_LED_switch > 500) {
 		digitalToggleFast(LED_BUILTIN);
 		since_LED_switch = 0;
 	}
-	if (since_hello >= 1000) {
-		// dbg(".");
-		if (++counter >= 10) {
-			/*
-			 * This is code to verify the audio servicing interrupts
-			 *
-			uint32_t this_count = out.isrCount();
-			interrupts_delta = this_count - interrupts_last;
-			interrupts_last = this_count;
-			dbg(" isr=%4lu %5lu %3lu\n", interrupts_delta,
-					(uint32_t)interrupt_time, bigtime++);
-			interrupt_time = 0;
-			 */
-			counter = 0;
-		}
-		since_hello = 0;
+	if (metronome && since_kick >= 10000) {
+		dbg("kick\n");
+		kickSample.play(AudioSampleKiddykick);
+		since_kick = 0;
 	}
 	while (Serial.available()) {
 		int incoming = Serial.read();
@@ -136,6 +134,8 @@ void loop()
 			printf("Audio used %u buffers\n", AudioMemoryUsageMax() );
 		break;
 
+		// Kick it
+		case 'k':
 		case ' ':
 			run = !run;
 			printf("now %s\n", run? "running" : "stopped");
@@ -168,7 +168,13 @@ void loop()
 			dbg("level now %s\n", levelHigh? "high" : "low");
 		break;
 
-		//
+		// metronome kick
+		case 'm':
+			metronome = !metronome;
+			dbg("metronome %s\n", metronome? "true" : "false");
+		break;
+
+		// Put the piezo object into test mode
 		case 't':
 			{
 				bool piezoTest = piezo.testMode();
