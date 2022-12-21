@@ -4,6 +4,7 @@
 
 ARDUINO_ROOT ?= ${HOME}/.arduino15
 HARDWARE_ROOT ?= ${ARDUINO_ROOT}/packages/teensy/hardware/avr/1.57.1
+HARDWARE_LIB_PATH := ${HARDWARE_ROOT}/libraries
 
 # CORE_SRC_CPP = $(wildcard ${HARDWARE_ROOT}/cores/${PLATFORM}/*.cpp)
 
@@ -42,6 +43,7 @@ AUDIO_LIB_C_FILES = data_ulaw.c data_waveforms.c
 AUDIO_LIB_S_FILES = memcpy_audio.S
 AUDIO_OBJS := $(addprefix $(LIBOBJDIR)/,$(AUDIO_LIB_C_FILES:.c=.o) \
 	$(AUDIO_LIB_CPP_FILES:.cpp=.o) $(AUDIO_LIB_S_FILES:.S=.o))
+AUDIO_LIB_PATH := ${LIBRARYPATH}/Audio
 
 $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Audio/%.c | $(LIBOBJDIR)
 	@echo Compiling $@ from $<
@@ -56,7 +58,7 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Audio/%.cpp | $(LIBOBJDIR)
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(AUDIO_LIB): $(AUDIO_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${AUDIO_LIB_PATH}
 	@$(AR) $(ARFLAGS) $@ $^
 
 BOUNCE_LIB_CPP_FILES = Bounce.cpp
@@ -64,16 +66,16 @@ BOUNCE_LIB_C_FILES =
 BOUNCE_OBJS := $(addprefix $(LIBOBJDIR)/,$(BOUNCE_LIB_C_FILES:.c=.o) \
 	$(BOUNCE_LIB_CPP_FILES:.cpp=.o))
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Bounce/%.c | $(LIBOBJDIR)
+$(LIBOBJDIR)/%.o : ${HARDWARE_ROOT}/libraries/Bounce/%.c | $(LIBOBJDIR)
 	@echo Compiling $@ from $<
 	@$(COMPILE.c) $(OUTPUT_OPTION) $<
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Bounce/%.cpp | $(LIBOBJDIR)
+$(LIBOBJDIR)/%.o : ${HARDWARE_ROOT}/libraries/Bounce/%.cpp | $(LIBOBJDIR)
 	@echo Compiling $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(BOUNCE_LIB): $(BOUNCE_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${HARDWARE_LIB_PATH}/Bounce
 	@$(AR) $(ARFLAGS) $@ $^
 
 WIRE_LIB_CPP_FILES = Wire.cpp WireKinetis.cpp
@@ -81,42 +83,47 @@ WIRE_LIB_C_FILES =
 WIRE_OBJS := $(addprefix $(LIBOBJDIR)/,$(WIRE_LIB_C_FILES:.c=.o) \
 	$(WIRE_LIB_CPP_FILES:.cpp=.o))
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Wire/%.c
+$(LIBOBJDIR)/%.o : ${LIBRARYPATH}/Wire/%.c
 	@echo Compiling $@ from $<
 	@$(COMPILE.c) $(OUTPUT_OPTION) $<
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Wire/%.cpp
+$(LIBOBJDIR)/%.o : ${LIBRARYPATH}/Wire/%.cpp
 	@echo Compiling $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(WIRE_LIB): $(WIRE_OBJS) | ${LIBDIR}
+	@echo Collecting library $@ from ${LIBRARYPATH}/Wire
 	@echo Collecting library $@
 	@$(AR) $(ARFLAGS) $@ $^
 
-SD_LIB_CPP_FILES = File.cpp SD.cpp Sd2Card.cpp SdFile.cpp SdVolume.cpp
+SD_LIB_CPP_FILES := SD.cpp
 SD_OBJS := $(addprefix $(LIBOBJDIR)/,$(SD_LIB_CPP_FILES:.cpp=.o))
+SD_LIB_PATH := ${LIBRARYPATH}/SD
+# SD_LIB_PATH := ${HARDWARE_ROOT}/libraries/SD/src
+${SD_OBJS}: CPPFLAGS += -I${HARDWARE_ROOT}/libraries/SdFat/src \
+	-I${SD_LIB_PATH}/utility
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/SD/%.cpp
+$(LIBOBJDIR)/%.o : ${SD_LIB_PATH}/%.cpp
 	@echo Compiling $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/SD/utility/%.cpp
+$(LIBOBJDIR)/%.o : ${SD_LIB_PATH}/utility/%.cpp
 	@echo Compiling $@ from $<
-	@$(COMPILE.cpp) -I$(LIBRARYPATH)/SD/utility $(OUTPUT_OPTION) $<
+	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(SD_LIB): $(SD_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${SD_LIB_PATH}
 	@$(AR) $(ARFLAGS) $@ $^
 
 SPI_LIB_CPP_FILES = SPI.cpp
 SPI_OBJS := $(addprefix $(LIBOBJDIR)/,$(SPI_LIB_CPP_FILES:.cpp=.o))
 
-$(LIBOBJDIR)/%.o : $(LIBRARYPATH)/SPI/%.cpp
+$(LIBOBJDIR)/%.o : ${HARDWARE_ROOT}/libraries/SPI/%.cpp
 	@echo Compiling $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(SPI_LIB): $(SPI_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${HARDWARE_LIB_PATH}/SPI
 	@$(AR) $(ARFLAGS) $@ $^
 
 I2C_LIB_CPP_FILES = i2c_t3.cpp
@@ -127,16 +134,17 @@ $(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/libraries/i2c_t3/%.cpp | ${LIBOBJDIR}
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(I2C_LIB): $(I2C_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${HARDWARE_LIB_PATH}/libraries
 	@$(AR) $(ARFLAGS) $@ $^
 
 ADC_LIB_CPP_FILES = ADC.cpp ADC_Module.cpp
 ADC_OBJS := $(addprefix $(LIBOBJDIR)/,$(ADC_LIB_CPP_FILES:.cpp=.o))
+ADC_LIB_PATH := ${HARDWARE_LIB_PATH}/ADC
 
-$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/libraries/ADC/%.cpp | ${LIBOBJDIR}
-	@echo Compiling $@ from $<
+$(LIBOBJDIR)/%.o : ${ADC_LIB_PATH}/%.cpp | ${LIBOBJDIR}
+	@echo Compiling $@ from $(notdir $<)
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(ADC_LIB): $(ADC_OBJS) | ${LIBDIR}
-	@echo Collecting library $@
+	@echo Collecting library $@ from ${ADC_LIB_PATH}
 	@$(AR) $(ARFLAGS) $@ $^
