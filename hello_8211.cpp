@@ -52,12 +52,13 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
-	dbg("Hey PC\r\n");
+	delay(1500);
+	dbg("Hey PC\n");
 	delay(500);
 	AudioMemory(2);
 	sine1.frequency(Freq);
 	sine1.amplitude(1.0);
-	dbg("Hello 8211\r\n");
+	dbg("Hello 8211\n");
 }
 
 void loop()
