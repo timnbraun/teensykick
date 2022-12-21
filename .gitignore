@@ -1,6 +1,9 @@
 # Generated source
 AudioSampleKiddykick.*
 
+# Editor cruft
+*.swp
+
 # Prerequisites
 *.d
 
