@@ -18,11 +18,25 @@ CDEFINES += -D__$(MCU)__ -DARDUINO=10813 -DTEENSYDUINO=157 \
 	-DLAYOUT_US_ENGLISH
 
 CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD $(CDEFINES) \
-	-I$(LIBRARYPATH)/include
-CPPFLAGS += -I$(LIBRARYPATH)/Audio -I$(LIBRARYPATH)/SPI \
-	-I$(LIBRARYPATH)/SD -I$(LIBRARYPATH)/SerialFlash \
-	-I$(LIBRARYPATH)/Bounce -I${HARDWARE_ROOT}/libraries/i2c_t3 \
-	-I$(LIBRARYPATH)/Wire
+	-I$(LIBRARYPATH)/include -I$(LIBRARYPATH)/Audio
+
+ifdef LIBRARIES_GOOD
+CPPFLAGS += \
+	-I${HARDWARE_ROOT}/libraries/SD/src -I${HARDWARE_ROOT}/libraries/SerialFlash \
+	-I${HARDWARE_ROOT}/libraries/Wire
+else
+CPPFLAGS += \
+	-I${LIBRARYPATH}/SPI \
+	-I${LIBRARYPATH}/SD -I${LIBRARYPATH}/SerialFlash \
+	-I${LIBRARYPATH}/Wire
+endif
+
+CPPFLAGS += \
+	-I${HARDWARE_ROOT}/libraries/SPI \
+	-I${HARDWARE_ROOT}/libraries/Bounce \
+	-I${HARDWARE_ROOT}/libraries/i2c_t3 \
+	-I${HARDWARE_ROOT}/libraries/ADC
+
 CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti
 CFLAGS =
 ARFLAGS = crvs
@@ -48,25 +62,30 @@ BUILDDIR = build
 # Generate a version string from git for the C++ code to use
 GIT_DIRTY := $(shell test -n "`git diff-index --name-only HEAD`" && echo '-dirty')
 GIT_VERSION := $(shell git describe --tags || echo -n 'V0.NO-GIT')$(GIT_DIRTY)
-CDEFINES += -DTEENSYKICK_VERSION=\"${GIT_VERSION}\"
 
-TEENSY_LIB = $(LIBDIR)/libteensy-lc.a
-BOUNCE_LIB = $(LIBDIR)/libBounce.a
-AUDIO_LIB  = $(LIBDIR)/libAudio.a
-SPI_LIB    = $(LIBDIR)/libSPI.a
-WIRE_LIB   = $(LIBDIR)/libWire.a
-I2C_LIB    = $(LIBDIR)/libi2c_t3.a
-LIB_LIST   = $(AUDIO_LIB) $(WIRE_LIB) $(TEENSY_LIB)
+BUILD_DATE := $(shell date '+%y/%m/%d')
+CDEFINES += -DTEENSYKICK_VERSION=\"${GIT_VERSION}\" -DBUILD_DATE=\"${BUILD_DATE}\"
+
+TEENSY_LIB := $(LIBDIR)/libteensy-lc.a # from teensy-duino
+BOUNCE_LIB := $(LIBDIR)/libBounce.a
+AUDIO_LIB  := $(LIBDIR)/libAudio.a # from teensy-duino
+SD_LIB     := $(LIBDIR)/libSD.a	   # broken, from teensy-duino
+SPI_LIB    := $(LIBDIR)/libSPI.a
+WIRE_LIB   := $(LIBDIR)/libWire.a # from teensy-duino
+I2C_LIB    := $(LIBDIR)/libi2c_t3.a
+ADC_LIB    := $(LIBDIR)/libADC.a
+LIB_LIST   = $(AUDIO_LIB) $(WIRE_LIB) $(ADC_LIB) $(TEENSY_LIB)
 
 LIBS := -L$(LIBDIR) $(subst lib/lib,-l,$(LIB_LIST:.a=)) $(LIBS)
 
-TARGET = kick
+TARGET := kick
 
+TARGETS = \
+	hello_lc hello_adc hello_midi hello_8211 hello_sine hello_sgt hello_timer \
+	metronome kick kick_synth
 
 .PHONY: all load clean upload
-all: $(addprefix ${BUILDDIR}/,hello_lc.hex hello_midi.hex hello_8211.hex \
-	hello_sine.hex hello_sgt.hex hello_timer.hex metronome.hex kick.hex) \
-	| ${BUILDDIR}
+all: $(addprefix ${BUILDDIR}/,${TARGETS:=.hex}) | ${BUILDDIR}
 
 # CPP_FILES = $(TARGET).cpp analog_stub.cpp usb_write.cpp
 # OBJS = $(addprefix $(OBJDIR)/,$(CPP_FILES:.cpp=.o))
@@ -88,6 +107,7 @@ ${BUILDDIR}/hello_lc.elf: $(HL_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@echo built $@
 
 H8_OBJS := $(addprefix $(OBJDIR)/,hello_8211.o $(CPP_FILES:.cpp=.o))
+${H8_OBJS} : CPPFLAGS += -I${HARDWARE_ROOT}/libraries/SdFat/src
 ${BUILDDIR}/hello_8211.elf: $(H8_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(H8_OBJS) $(LIBS) -o $@
 	@echo built $@
@@ -105,6 +125,11 @@ ${BUILDDIR}/hello_sgt.elf: $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 HT_OBJS := $(addprefix $(OBJDIR)/,hello_timer.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_timer.elf: $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
+	@echo built $@
+
+HA_OBJS := $(addprefix $(OBJDIR)/,hello_adc.o $(CPP_FILES:.cpp=.o))
+${BUILDDIR}/hello_adc.elf: $(HA_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
+	@$(LINK.o) $(HA_OBJS) $(LIBS) -o $@
 	@echo built $@
 
 METRONOME_CPP := metronome.cpp analog_stub.cpp AudioSampleKiddykick.cpp
