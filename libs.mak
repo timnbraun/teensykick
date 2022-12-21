@@ -32,8 +32,8 @@ $(LIBOBJDIR)/%.o : ${CORE_SRC_PATH}/%.cpp | ${LIBOBJDIR}
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(TEENSY_LIB): ${CORE_OBJ} | ${LIBDIR}
-	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ ${CORE_OBJ}
+	@echo Collecting library $@ from ${CORE_SRC_PATH}
+	@$(AR) $(ARFLAGS) $@ $^
 
 AUDIO_LIB_CPP_FILES = control_sgtl5000.cpp effect_multiply.cpp filter_biquad.cpp \
 	mixer.cpp output_i2s.cpp output_pt8211.cpp play_memory.cpp play_memory2.cpp \
@@ -57,7 +57,7 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Audio/%.cpp | $(LIBOBJDIR)
 
 $(AUDIO_LIB): $(AUDIO_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $(AUDIO_OBJS)
+	@$(AR) $(ARFLAGS) $@ $^
 
 BOUNCE_LIB_CPP_FILES = Bounce.cpp
 BOUNCE_LIB_C_FILES =
@@ -74,7 +74,7 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Bounce/%.cpp | $(LIBOBJDIR)
 
 $(BOUNCE_LIB): $(BOUNCE_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $(BOUNCE_OBJS)
+	@$(AR) $(ARFLAGS) $@ $^
 
 WIRE_LIB_CPP_FILES = Wire.cpp WireKinetis.cpp
 WIRE_LIB_C_FILES =
@@ -91,7 +91,7 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/Wire/%.cpp
 
 $(WIRE_LIB): $(WIRE_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $(WIRE_OBJS)
+	@$(AR) $(ARFLAGS) $@ $^
 
 SD_LIB_CPP_FILES = File.cpp SD.cpp Sd2Card.cpp SdFile.cpp SdVolume.cpp
 SD_OBJS := $(addprefix $(LIBOBJDIR)/,$(SD_LIB_CPP_FILES:.cpp=.o))
@@ -106,7 +106,7 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/SD/utility/%.cpp
 
 $(SD_LIB): $(SD_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $(SD_OBJS)
+	@$(AR) $(ARFLAGS) $@ $^
 
 SPI_LIB_CPP_FILES = SPI.cpp
 SPI_OBJS := $(addprefix $(LIBOBJDIR)/,$(SPI_LIB_CPP_FILES:.cpp=.o))
@@ -117,15 +117,26 @@ $(LIBOBJDIR)/%.o : $(LIBRARYPATH)/SPI/%.cpp
 
 $(SPI_LIB): $(SPI_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $<
+	@$(AR) $(ARFLAGS) $@ $^
 
 I2C_LIB_CPP_FILES = i2c_t3.cpp
 I2C_OBJS := $(addprefix $(LIBOBJDIR)/,$(I2C_LIB_CPP_FILES:.cpp=.o))
 
-$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/libraries/i2c_t3/%.cpp
+$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/libraries/i2c_t3/%.cpp | ${LIBOBJDIR}
 	@echo Compiling $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 $(I2C_LIB): $(I2C_OBJS) | ${LIBDIR}
 	@echo Collecting library $@
-	@$(AR) $(ARFLAGS) $@ $<
+	@$(AR) $(ARFLAGS) $@ $^
+
+ADC_LIB_CPP_FILES = ADC.cpp ADC_Module.cpp
+ADC_OBJS := $(addprefix $(LIBOBJDIR)/,$(ADC_LIB_CPP_FILES:.cpp=.o))
+
+$(LIBOBJDIR)/%.o : $(HARDWARE_ROOT)/libraries/ADC/%.cpp | ${LIBOBJDIR}
+	@echo Compiling $@ from $<
+	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+$(ADC_LIB): $(ADC_OBJS) | ${LIBDIR}
+	@echo Collecting library $@
+	@$(AR) $(ARFLAGS) $@ $^
