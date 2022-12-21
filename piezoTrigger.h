@@ -17,7 +17,7 @@
 class piezoTrigger
 {
 	// Some configuration constants
-	const static uint32_t threshhold_mv = 600;	// sample has to pass this
+	const static uint32_t threshhold_mv = 200;	// sample has to pass this
 												// value to be a trigger
 	const static uint32_t holdoff_msec  = 150;	// no re-triggering before this
 	const static uint32_t NUM_SAMPLES   =   3;
@@ -31,6 +31,8 @@ class piezoTrigger
 
 	elapsedMillis	test_time;
 	bool			testing;
+
+	uint32_t		get_sample();
 
 	public:
 		piezoTrigger(uint32_t input, void (*f)(uint32_t)) : piezoInput(input), 

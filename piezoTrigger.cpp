@@ -16,15 +16,33 @@
 #include <cstdint>
 #include <Arduino.h>
 #include <elapsedMillis.h>
+#include <ADC.h>
 #include "piezoTrigger.h"
 
-#define ANALOG_DEFAULT_REFERENCE 1000
+// #undef dbg
+// #define dbg( ... ) {}
+
+#if defined(__MKL26Z64__)
+#define ANALOG_DEFAULT_REFERENCE 3300
+#endif
+
+ADC adc;
+
+inline uint32_t piezoTrigger::get_sample()
+{
+	return adc.adc0->analogRead(piezoInput) * 1000.0f *
+		(ANALOG_DEFAULT_REFERENCE / 1000.0) / 4095.0f;
+}
 
 void piezoTrigger::setup()
 {
-	// Set up builtin adc for pizeo input
-	analog_init();
-	analogReadResolution(12);
+	// Set up builtin adc for piezo input
+	pinMode( piezoInput, INPUT_DISABLE );
+	adc.adc0->setResolution( 12 );
+	adc.adc0->setConversionSpeed( ADC_CONVERSION_SPEED::MED_SPEED );
+	adc.adc0->setSamplingSpeed( ADC_SAMPLING_SPEED::MED_SPEED );
+
+	dbg("piezoTrigger on pin %lu\n", piezoInput);
 }
 
 void piezoTrigger::loop()
@@ -32,8 +50,7 @@ void piezoTrigger::loop()
 	static uint32_t sample_count = 0;
 	uint32_t t_mv;
 
-	t_mv = analogRead(piezoInput) * 3300 * 
-		(ANALOG_DEFAULT_REFERENCE / 1000.0) / 4095;
+	t_mv = get_sample();
 
 	////
 	// Experiments to find a way to get a velocity mapped to the
@@ -51,8 +68,14 @@ void piezoTrigger::loop()
 	if ((t_mv > threshhold_mv) && !fired) {
 
 		if (sample_count < NUM_SAMPLES) {
-			// printf( "sample = %5lu, %2lu\n", t_mv, sample_count );
+			dbg( "sample = %5lu, %2lu\n", t_mv, sample_count );
 			samples[sample_count++] = t_mv;
+		}
+
+		for (; sample_count < NUM_SAMPLES; sample_count++) {
+			delayMicroseconds(200);
+			samples[sample_count] = get_sample();
+			dbg( "sample = %5lu\n", get_sample() );
 		}
 
 		if (sample_count == NUM_SAMPLES) {
@@ -67,7 +90,7 @@ void piezoTrigger::loop()
 
 			trig += slope;
 
-			// printf( "trigger = %5lu, %4ld %ld\n", t_mv, trig, slope );
+			dbg( "trigger = %5lu, %4ld %ld\n", t_mv, trig, slope );
 
 			func( trig );
 			fired = true;
@@ -82,8 +105,10 @@ void piezoTrigger::loop()
 
 	if (testing) {
 		if (test_time > 1000) {
-			printf( "t_mv = %5lu\n", t_mv);
+			dbg( "t_mv = %5lu\n", t_mv);
 			test_time = 0;
+
+			sample_count = NUM_SAMPLES + 1;
 		}
 	}
 }
