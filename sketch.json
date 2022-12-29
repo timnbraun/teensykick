@@ -1,0 +1,5 @@
+{
+  "cpu": {
+    "fqbn": "teensy:avr:teensyLC"
+  }
+}
