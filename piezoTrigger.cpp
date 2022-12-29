@@ -8,6 +8,7 @@
 ///  (y3 + y2 + y1) / 3 + (y3 - y1) / 2
 ///
 ///  Call a callback function when a threshold is passed
+///  Max velocity on callback is 127, like with midi velocity
 ///
 ///
 ///
@@ -19,8 +20,8 @@
 #include <ADC.h>
 #include "piezoTrigger.h"
 
-// #undef dbg
-// #define dbg( ... ) {}
+#undef dbg
+#define dbg( ... ) {}
 
 #if defined(__MKL26Z64__)
 #define ANALOG_DEFAULT_REFERENCE 3300
@@ -39,7 +40,7 @@ void piezoTrigger::setup()
 	// Set up builtin adc for piezo input
 	pinMode( piezoInput, INPUT_DISABLE );
 	adc.adc0->setResolution( 12 );
-	adc.adc0->setConversionSpeed( ADC_CONVERSION_SPEED::MED_SPEED );
+	adc.adc0->setConversionSpeed( ADC_CONVERSION_SPEED::HIGH_SPEED );
 	adc.adc0->setSamplingSpeed( ADC_SAMPLING_SPEED::MED_SPEED );
 
 	dbg("piezoTrigger on pin %lu\n", piezoInput);
@@ -66,16 +67,17 @@ void piezoTrigger::loop()
 	//
 	////
 	if ((t_mv > threshhold_mv) && !fired) {
+		[[maybe_unused]] uint32_t time_microsec = micros();
 
 		if (sample_count < NUM_SAMPLES) {
-			dbg( "sample = %5lu, %2lu\n", t_mv, sample_count );
+			// dbg( "sample = %5lu\n", t_mv );
 			samples[sample_count++] = t_mv;
 		}
 
 		for (; sample_count < NUM_SAMPLES; sample_count++) {
 			delayMicroseconds(200);
 			samples[sample_count] = get_sample();
-			dbg( "sample = %5lu\n", get_sample() );
+			dbg( "sample = %5lu, %5lu\n", get_sample(), micros() - time_microsec );
 		}
 
 		if (sample_count == NUM_SAMPLES) {
@@ -90,9 +92,13 @@ void piezoTrigger::loop()
 
 			trig += slope;
 
-			dbg( "trigger = %5lu, %4ld %ld\n", t_mv, trig, slope );
+			uint32_t vel = (trig * 127) / 3300;
+			if (vel > 127)
+				vel = 127;
 
-			func( trig );
+			dbg( "trig   = %5lu, %5lu usec\n", vel, micros() - time_microsec );
+
+			func( vel );
 			fired = true;
 			trigger_time = 0;
 		}
