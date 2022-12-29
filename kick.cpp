@@ -82,14 +82,14 @@ void setup()
 
 	// Midi setup
 	usbMIDI.setHandleNoteOn(onNoteOn);
-	usbMIDI.setHandleNoteOff(onNoteOff);
+	// usbMIDI.setHandleNoteOff(onNoteOff);
 
 	delay(2000);
 
 	// Audio component setup
 	AudioMemory(6);
 	dac.enable();
-	dac.lineOutLevel( 14 );
+	dac.lineOutLevel( 29 );
 	digitalWrite(LED_BUILTIN, HIGH);
 
 	delay(1000);
@@ -115,18 +115,20 @@ void setup()
 
 void loop()
 {
-	static bool run = true, levelHigh = true, metronome = false;
+	static bool levelHigh = true, metronome = false;
 	static float gain = 1.0f;
 
 	if (since_LED_switch > 500) {
 		digitalToggleFast(LED_BUILTIN);
 		since_LED_switch = 0;
 	}
+
 	if (metronome && since_kick >= 10000) {
 		dbg("kick\n");
 		kickSample.play(AudioSampleKiddykick);
 		since_kick = 0;
 	}
+
 	while (Serial.available()) {
 		int incoming = Serial.read();
 		switch (incoming) {
@@ -137,14 +139,8 @@ void loop()
 		// Kick it
 		case 'k':
 		case ' ':
-			run = !run;
-			printf("now %s\n", run? "running" : "stopped");
-			if (run) {
-
-				kickSample.play(AudioSampleKiddykick);
-
-			}
-
+			printf("kick it now\n");
+			kickSample.play(AudioSampleKiddykick);
 		break;
 
 		// Adjust the gain
@@ -207,18 +203,25 @@ void loop()
 
 void onNoteOn(byte chan, byte note, byte vel)
 {
-	dbg("N ch=%u %u( %u ) on\n", chan, note, vel);
+	dbg("N=%u ( %u ) c=%u\n", note, vel, chan);
 
-	kickSample.play(AudioSampleKiddykick);
+	onPiezoTrigger( vel );
 }
 
-void onNoteOff(byte chan, byte note, byte vel)
-{
-	dbg("N c=%u %u( %u ) off\n", chan, note, vel);
-}
+// void onNoteOff(byte chan, byte note, byte vel)
+// {
+// 	dbg("N c=%u %u( %u ) off\n", chan, note, vel);
+// }
 
+////////////
+///
+/// vel is like midi => 0 - 127
+///
+////////////
 void onPiezoTrigger(uint32_t vel)
 {
-	dbg("PiezoTrigger %4lu %4lu\n\n", vel, millis());
+	dbg("PiezoTrigger %4lu %6lu\n\n", vel, millis());
+	gain_l.gain( vel / 127.0f );
+	gain_r.gain( vel / 127.0f );
 	kickSample.play(AudioSampleKiddykick);
 }
