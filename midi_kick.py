@@ -34,6 +34,7 @@ def _print_device_info():
     for i in range(get_count()):
         r = get_device_info(i)
         (interf, name, input, output, opened) = r
+        name = "'" + str(name, encoding='utf-8').strip() + "'"
 
         in_out = ""
         if input:
@@ -42,9 +43,8 @@ def _print_device_info():
             in_out = "(output)"
 
         print(
-            "%2i: '%-19s', opened :%s:  %s"
-            % (i, 
-				str(name, encoding='utf-8'), opened, in_out)
+            "%2i: %-19s - opened :%s:  %s"
+            % (i, name, opened, in_out)
         )
 
 def find_id(target='Teensy MIDI'):
