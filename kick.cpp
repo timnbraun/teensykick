@@ -55,7 +55,7 @@ AudioOutputI2S        	out;
 AudioAmplifier			gain_l;
 AudioAmplifier			gain_r;
 
-AudioPlayMemory2			kickSample;
+AudioPlayMemory2		kickSample;
 
 AudioConnection         patchCord1_l(kickSample, 0, gain_l, 0);
 AudioConnection         patchCord1_r(kickSample, 1, gain_r, 0);
@@ -63,7 +63,8 @@ AudioConnection			patchCord3(gain_l, 0, out, 0);
 AudioConnection			patchCord4(gain_r, 0, out, 1);
 
 usb_serial_class 		Serial;
-elapsedMillis 			since_LED_switch, since_kick;
+elapsedMillis 			since_LED_switch, metronome_beat, since_kick;
+bool					kicked = false;
 
 piezoTrigger			piezo(TAP_INPUT, onPiezoTrigger);
 
@@ -118,15 +119,23 @@ void loop()
 	static bool levelHigh = true, metronome = false;
 	static float gain = 1.0f;
 
-	if (since_LED_switch > 500) {
+	if (since_LED_switch > 1500) {
 		digitalToggleFast(LED_BUILTIN);
 		since_LED_switch = 0;
 	}
 
-	if (metronome && since_kick >= 10000) {
+	if (metronome && metronome_beat > 10000) {
 		dbg("kick\n");
 		kickSample.play(AudioSampleKiddykick);
 		since_kick = 0;
+		kicked = true;
+		metronome_beat = 0;
+	}
+
+	if (kicked && since_kick > 200) {
+		digitalWrite(LED_BUILTIN, LOW);
+		since_kick = 0;
+		kicked = false;
 	}
 
 	while (Serial.available()) {
@@ -141,6 +150,7 @@ void loop()
 		case ' ':
 			printf("kick it now\n");
 			kickSample.play(AudioSampleKiddykick);
+			kicked = true;
 		break;
 
 		// Adjust the gain
@@ -221,7 +231,16 @@ void onNoteOn(byte chan, byte note, byte vel)
 void onPiezoTrigger(uint32_t vel)
 {
 	dbg("PiezoTrigger %4lu %6lu\n\n", vel, millis());
+
+	// A pretty light
+	digitalWrite(LED_BUILTIN, HIGH);
+	since_kick = 0;
+	kicked = true;
+
+	// Set the gain
 	gain_l.gain( vel / 127.0f );
 	gain_r.gain( vel / 127.0f );
+
+	// boom!
 	kickSample.play(AudioSampleKiddykick);
 }
