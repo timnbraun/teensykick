@@ -3,7 +3,7 @@
 #
 
 ARDUINO_ROOT ?= ${HOME}/.arduino15
-HARDWARE_ROOT ?= ${ARDUINO_ROOT}/packages/teensy/hardware/avr/1.57.1
+HARDWARE_ROOT ?= $(wildcard ${ARDUINO_ROOT}/packages/teensy/hardware/avr/*)
 HARDWARE_LIB_PATH := ${HARDWARE_ROOT}/libraries
 
 # CORE_SRC_CPP = $(wildcard ${HARDWARE_ROOT}/cores/${PLATFORM}/*.cpp)
