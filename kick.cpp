@@ -32,7 +32,7 @@
 #include <Arduino.h>
 #include <Audio.h>
 #include <usb_dev.h>
-
+#include <TimedBlink.h>
 
 #include "AudioSampleKiddykick.h"
 #include "piezoTrigger.h"
@@ -40,6 +40,8 @@
 
 #define TAP_INPUT                  A7
 
+#define dbg(...) \
+	fiprintf(stderr, __VA_ARGS__)
 #define dbg_putc(c) \
 	fputc((c), stderr)
 
@@ -63,8 +65,10 @@ AudioConnection			patchCord3(gain_l, 0, out, 0);
 AudioConnection			patchCord4(gain_r, 0, out, 1);
 
 usb_serial_class 		Serial;
-elapsedMillis 			since_LED_switch, metronome_beat, since_kick;
+elapsedMillis 			metronome_beat, since_kick;
 bool					kicked = false;
+
+TimedBlink				heart(LED_BUILTIN);
 
 piezoTrigger			piezo(TAP_INPUT, onPiezoTrigger);
 
@@ -78,40 +82,40 @@ piezoTrigger			piezo(TAP_INPUT, onPiezoTrigger);
 void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
+	heart.blink(250, 250);
 	usb_init();
-	delay(100);
+	heart.blinkDelay(100);
 
 	// Midi setup
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	// usbMIDI.setHandleNoteOff(onNoteOff);
 
-	delay(2000);
+	heart.blinkDelay(1000);
 
 	// Audio component setup
 	AudioMemory(6);
 	dac.enable();
 	dac.lineOutLevel( 29 );
-	digitalWrite(LED_BUILTIN, HIGH);
 
-	delay(1000);
+	heart.blinkDelay(500);
 	dbg("Audio init\n");
-	digitalWrite(LED_BUILTIN, LOW);
 
 	kickSample.invertPhase(1, true);
 
-	delay(100);
+	heart.blinkDelay(100);
 	dbg("Sample init\n");
 
 	gain_l.gain(0.5);
 	gain_r.gain(0.5);
 
-	delay(100);
+	heart.blinkDelay(100);
 	dbg("Gain init\n");
 
 	piezo.setup();
 
-	delay(100);
+	heart.blinkDelay(100);
 	dbg("\nHello teensy kick " TEENSYKICK_VERSION " " BUILD_DATE "\n\n");
+	heart.heartbeat( 150, 4000 - (3*150), 2 );
 }
 
 void loop()
@@ -119,10 +123,6 @@ void loop()
 	static bool levelHigh = true, metronome = false;
 	static float gain = 1.0f;
 
-	if (since_LED_switch > 1500) {
-		digitalToggleFast(LED_BUILTIN);
-		since_LED_switch = 0;
-	}
 
 	if (metronome && metronome_beat > 10000) {
 		dbg("kick\n");
@@ -187,7 +187,7 @@ void loop()
 
 				piezoTest = piezo.testMode( not piezoTest );
 
-				printf("piezo test = %s\n", piezoTest? "true" : "false");
+				dbg("piezo test = %s\n", piezoTest? "true" : "false");
 			}
 		break;
 
@@ -209,6 +209,8 @@ void loop()
 	piezo.loop();
 
 	usbMIDI.read();
+
+	heart.loop();
 }
 
 void onNoteOn(byte chan, byte note, byte vel)
@@ -230,7 +232,7 @@ void onNoteOn(byte chan, byte note, byte vel)
 ////////////
 void onPiezoTrigger(uint32_t vel)
 {
-	dbg("PiezoTrigger %4lu %6lu\n\n", vel, millis());
+	dbg("gonna kick %3lu @ %6lu\n\n", vel, millis());
 
 	// A pretty light
 	digitalWrite(LED_BUILTIN, HIGH);
