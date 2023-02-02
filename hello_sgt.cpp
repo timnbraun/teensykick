@@ -28,13 +28,14 @@
  * SOFTWARE.
  */
 
+#define dbg(...) \
+	Serial.printf(__VA_ARGS__)
+
 #include <Audio.h>
 #include <usb_dev.h>
 
-#define dbg(...) \
-	fiprintf(stderr, __VA_ARGS__)
 #define dbg_putc(c) \
-	fputc((c), stderr)
+	Serial.print(c)
 
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
@@ -65,7 +66,7 @@ void setup()
 	AudioMemory(2);
 	// sine1.frequency(Freq);
 	// sine1.amplitude(1.0);
-	dbg("Hello sgt\r\n");
+	dbg("Hello sgt\n");
 	delay(500);
 	dac.enable();
 }
@@ -84,7 +85,7 @@ void loop()
 			uint32_t this_count = out.isrCount();
 			interrupts_delta = this_count - interrupts_last;
 			interrupts_last = this_count;
-			dbg(" %5lu %5lu %03lu\r\n", interrupts_delta, 
+			dbg(" %5lu %5lu %03lu\n", interrupts_delta, 
 				(uint32_t )interrupt_time, bigtime++);
 			interrupt_time = 0;
 			counter = 0;
@@ -95,11 +96,11 @@ void loop()
 		int incoming = Serial.read();
 		switch (incoming) {
 		// case 'b':
-		//	 dbg("sine used %u cycles\r\n", sine1.cpu_cycles_total );
+		//	 dbg("sine used %u cycles\n", sine1.cpu_cycles_total );
 		// break;
 		case ' ':
 			run = !run;
-			dbg("now %s\r\n", run? "running" : "stopped");
+			dbg("now %s\n", run? "running" : "stopped");
 		break;
 		case 'l':
 			dac.lineOutLevel( 14 );
@@ -121,11 +122,11 @@ void loop()
 
 void onNoteOn(byte chan, byte note, byte vel)
 {
-	dbg("N %d on\r\n", note);
+	dbg("N %d on\n", note);
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
 {
-	dbg("N %d off\r\n", note);
+	dbg("N %d off\n", note);
 }
 

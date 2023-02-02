@@ -31,6 +31,9 @@
 #include <Arduino.h>
 #include <usb_dev.h>
 
+#define dbg(...) \
+	Serial.printf(__VA_ARGS__)
+
 #if defined(USB_MIDI_SERIAL)
 #define USB_MIDI
 #endif
@@ -45,6 +48,12 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+	Serial.begin(115200);
+
+	while (!Serial)
+		delay(100);
+	dbg("Hello midi " BUILD_DATE "\n");
+
 	#if defined(USB_MIDI)
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	usbMIDI.setHandleNoteOff(onNoteOff);
@@ -68,20 +77,10 @@ void loop()
 
 void onNoteOn(byte chan, byte note, byte vel)
 {
-	dbg("N %d on\r\n", note);
+	dbg("N %d on\n", note);
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
 {
-	dbg("N %d off\r\n", note);
+	dbg("N %d off\n", note);
 }
-
-extern "C" {
-__attribute__((weak))
-int _write(int file, char *ptr, int len)
-{
-	usb_serial_write((const void *)ptr, len);
-	return len;
-}
-}
-

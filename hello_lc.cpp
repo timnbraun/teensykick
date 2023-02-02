@@ -31,6 +31,9 @@
 #include <Arduino.h>
 #include <usb_dev.h>
 
+#define dbg(...) \
+	Serial.printf(__VA_ARGS__)
+
 usb_serial_class Serial;
 elapsedMillis since_LED_switch;
 
@@ -47,7 +50,7 @@ void loop()
 	if (since_LED_switch > 500) {
 		ledState = !ledState;
 		digitalWriteFast(LED_BUILTIN, ledState? HIGH : LOW);
-		Serial.print("This is how we do it\r\n");
+		Serial.print("This is how we do it\n");
 		since_LED_switch = 0;
 	}
 }

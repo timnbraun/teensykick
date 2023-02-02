@@ -33,9 +33,9 @@
 #include <ADC.h>
 
 #define dbg(...) \
-	fiprintf(stderr, __VA_ARGS__)
+	Serial.printf(__VA_ARGS__)
 #define dbg_putc(c) \
-	fputc((c), stderr)
+	Serial.print(c)
 
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
@@ -179,10 +179,10 @@ void loop()
 
 void onNoteOn(byte chan, byte note, byte vel)
 {
-	dbg("N %d on\r\n", note);
+	dbg("N %d on\n", note);
 }
 
 void onNoteOff(byte chan, byte note, byte vel)
 {
-	dbg("N %d off\r\n", note);
+	dbg("N %d off\n", note);
 }

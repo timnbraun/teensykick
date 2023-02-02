@@ -31,8 +31,10 @@
 #include <Arduino.h>
 #include <usb_dev.h>
 
+#define dbg(...) \
+	Serial.printf(__VA_ARGS__)
 #define dbg_putc(c) \
-	fputc((c), stderr)
+	Serial.print((char )(c))
 
 void onTick();
 
@@ -44,9 +46,12 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+	Serial.begin(115200);
 
-	delay(1000);
-	dbg("\r\nHello teensy click\r\n\r\n");
+	delay(100);
+	while (!Serial)
+		delay(100);
+	dbg("\nHello teensy timer\n\n");
 	my_time.begin(onTick, 138000);
 }
 
@@ -55,7 +60,7 @@ void loop()
 {
 	if (since_LED_switch > 500) {
 		digitalToggleFast(LED_BUILTIN);
-		dbg("This is how we do it\r\n");
+		dbg("This is how we do it\n");
 		since_LED_switch = 0;
 	}
 }

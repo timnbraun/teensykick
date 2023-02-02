@@ -57,16 +57,22 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+	Serial.begin(115200);
+	delay(100);
+
+	while (!Serial)
+		delay(100);
+	dbg("Hello sine\n");
 
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	usbMIDI.setHandleNoteOff(onNoteOff);
+	delay(100);
 
-	delay(500);
 	AudioMemory(2);
 	sine1.frequency(Freq);
 	sine1.amplitude(1.0);
-	dbg("Hello sine\n");
 	delay(100);
+
 	dac.enable();
 	dac.lineOutLevel( 14 );
 }

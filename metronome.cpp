@@ -34,11 +34,14 @@
 #include <usb_dev.h>
 #include "AudioSampleKiddykick.h"
 
-#define printf( ... ) \
-	fiprintf(stdout, __VA_ARGS__ )
+#define dbg( ... ) \
+	fiprintf(stderr, __VA_ARGS__ )
 
 #define dbg_putc(c) \
 	fputc((c), stderr)
+
+#define printf( ... ) \
+	fiprintf(stdout, __VA_ARGS__ )
 
 class Metronome {
 public:

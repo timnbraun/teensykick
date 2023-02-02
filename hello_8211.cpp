@@ -32,7 +32,7 @@
 #include <usb_dev.h>
 
 #define dbg(...) \
-	fiprintf(stderr, __VA_ARGS__)
+	Serial.printf(__VA_ARGS__)
 
 // extern volatile uint32_t AudioOutputI2S_isr_count;
 
@@ -71,7 +71,7 @@ void loop()
 	if (since_hello >= 1000) {
 		dbg(".");
 		if (++counter >= 10) {
-			dbg(" %8lu %03lu\r\n", out.isrCount(), bigtime++);
+			dbg(" %8lu %03lu\n", out.isrCount(), bigtime++);
 			counter = 0;
 		}
 		since_hello = 0;
@@ -81,7 +81,7 @@ void loop()
 		Serial.write((uint8_t)incoming);
 		switch (incoming) {
 		case 'b':
-			dbg("sine used %u cycles\r\n", sine1.cpu_cycles_total );
+			dbg("sine used %u cycles\n", sine1.cpu_cycles_total );
 		break;
 		case 'o':
 			out.begin();

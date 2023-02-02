@@ -37,6 +37,8 @@
 
 #define TAP_INPUT                  14
 
+#define dbg(...) \
+	fiprintf(stderr, __VA_ARGS__)
 #define dbg_putc(c) \
 	fputc((c), stderr)
 
@@ -86,6 +88,12 @@ void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);
 	usb_init();
+	Serial.begin(115200);
+
+	delay(100);
+	while (!Serial)
+		delay(100);
+	dbg("\nHello teensy kick " TEENSYKICK_VERSION "\n\n");
 
 	// Midi setup
 	usbMIDI.setHandleNoteOn(onNoteOn);
@@ -109,8 +117,6 @@ void setup()
 	gain_r.gain(0.5);
 
 	piezo.setup();
-
-	dbg("\nHello teensy kick " TEENSYKICK_VERSION "\n\n");
 }
 
 void loop()
