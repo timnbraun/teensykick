@@ -84,7 +84,11 @@ void setup()
 	pinMode(LED_BUILTIN, OUTPUT);
 	heart.blink(250, 250);
 	usb_init();
-	heart.blinkDelay(100);
+	Serial.begin(115200);
+
+	for (int i = 0; !Serial && (i < 10); i++) {
+		heart.blinkDelay(100);
+	}
 
 	// Midi setup
 	usbMIDI.setHandleNoteOn(onNoteOn);
