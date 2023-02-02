@@ -28,14 +28,14 @@
  * SOFTWARE.
  */
 
-#define dbg(...) \
-	Serial.printf(__VA_ARGS__)
-
 #include <Audio.h>
 #include <usb_dev.h>
 
+#define dbg(...) \
+	fiprintf( stderr, __VA_ARGS__ )
+
 #define dbg_putc(c) \
-	Serial.print(c)
+	fputc(c, stderr)
 
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
