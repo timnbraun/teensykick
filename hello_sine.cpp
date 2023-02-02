@@ -28,6 +28,8 @@
  * SOFTWARE.
  */
 
+#include <cstdint>
+#include <Arduino.h>
 #include <Audio.h>
 #include <usb_dev.h>
 
@@ -36,12 +38,21 @@
 #define dbg_putc(c) \
 	fputc((c), stderr)
 
+#define USE_DAC
+#define USE_I2S
+
 void onNoteOn(byte chan, byte note, byte vel);
 void onNoteOff(byte chan, byte note, byte vel);
 
+#if defined(USE_DAC)
 AudioControlSGTL5000	dac;
+#endif
 AudioSynthWaveformSine  sine1;
+#if defined(USE_I2S)
 AudioOutputI2S        	out;
+#else
+AudioOutputUSB        	out;
+#endif
 AudioConnection         patchCord1(sine1, 0, out, 0);
 AudioConnection         patchCord2(sine1, 0, out, 1);
 
@@ -62,7 +73,7 @@ void setup()
 
 	while (!Serial)
 		delay(100);
-	dbg("Hello sine\n");
+	dbg("Hello sine " BUILD_DATE "\n");
 
 	usbMIDI.setHandleNoteOn(onNoteOn);
 	usbMIDI.setHandleNoteOff(onNoteOff);
@@ -73,13 +84,19 @@ void setup()
 	sine1.amplitude(1.0);
 	delay(100);
 
+#if defined(USE_DAC)
 	dac.enable();
 	dac.lineOutLevel( 14 );
+	dbg("dac enabled\n");
+#endif
 }
 
 void loop()
 {
-	static bool run = true, levelHigh = true;
+	static bool run = true;
+#if defined(USE_DAC)
+	static bool levelHigh = true;
+#endif
 
 	if (since_LED_switch > 500) {
 		digitalToggleFast(LED_BUILTIN);
@@ -114,6 +131,7 @@ void loop()
 				sine1.amplitude(0.0);
 			}
 		break;
+#if defined(USE_DAC)
 		case 'l':
 			if (levelHigh) {
 				dac.lineOutLevel( 28 );
@@ -124,6 +142,7 @@ void loop()
 			levelHigh = !levelHigh;
 			dbg("level now %s\n", levelHigh? "high" : "low");
 		break;
+#endif
 		case 'r':
 			_reboot_Teensyduino_();
 		break;
