@@ -23,19 +23,24 @@ SPECS    := --specs=nano.specs
 MCU_LD   := $(LIBRARYPATH)/mkl26z64.ld
 
 LIBS     := -larm_cortexM0l_math
-LOCALTEENSY_LIBRARIES = Audio
-USERLIBRARIES := TimedBlink/src
+LOCALTEENSY_LIBRARIES := Audio
+USERLIBRARIES         := TimedBlink/src
 
-CDEFINES := ${OPTIONS} -DUSB_MIDI_SERIAL -DLAYOUT_US_ENGLISH
+CDEFINES := ${OPTIONS} -DLAYOUT_US_ENGLISH
+CDEFINES += -DUSB_MIDI_SERIAL
+# CDEFINES += -DUSB_MIDI_AUDIO_SERIAL
 
 # options needed by many Arduino libraries to configure for Teensy 3.x
 CDEFINES += -D__$(MCU)__ -DARDUINO=10813 -DTEENSYDUINO=157
 
+CINCLUDES += -I${MYTEENSYDUINOPATH}/include
 CINCLUDES += $(addprefix -I${MYTEENSYDUINOPATH}/,${LOCALTEENSY_LIBRARIES})
 CINCLUDES += $(addprefix -I${USERLIBPATH}/,${USERLIBRARIES})
-CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD $(CDEFINES) \
-	-I$(LIBRARYPATH)/include ${CINCLUDES}
+CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD \
+	$(CDEFINES) \
+	${CINCLUDES}
 
+# The distributed libraries aren't working for my teensy-LC
 ifdef LIBRARIES_GOOD
 CPPFLAGS += \
 	-I${HARDWAREROOT}/libraries/SD/src -I${HARDWAREROOT}/libraries/SerialFlash \
@@ -124,7 +129,6 @@ ${BUILDDIR}/hello_midi.elf: $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 
 HL_OBJS := $(addprefix $(OBJDIR)/,hello_lc.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_lc.elf: $(HL_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
-	@echo Linking $@ LIBS=${LIBS}
 	@$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
 	@echo built $@
 
