@@ -162,7 +162,7 @@ void loop()
 			gain = gain / 2.0f;
 			if (gain < 0.0625)
 				gain = 1.0f;
-			fprintf(stdout, "gain %3u\n", int(gain * 100.0));
+			printf("gain %3u\n", int(gain * 100.0));
 			gain_r.gain( gain );
 			gain_l.gain( gain );
 		break;
