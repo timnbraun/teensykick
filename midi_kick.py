@@ -22,7 +22,10 @@ from contextlib import redirect_stdout
 with open(os.devnull, 'w') as devnull:
 	with redirect_stdout(devnull):
 		from pygame.midi import init, quit, get_count, get_device_info, Output
+		from pygame.midi import time as Time
 
+tempo = 120.0
+# tempo = 1.0 / (10.0 * 60.0)
 
 def print_device_info():
     init()
@@ -75,6 +78,41 @@ def kickit():
 	else:
 		print("no teensy MIDI available")
 
+def sendit( it ):
+	port = find_id()
+	if (port):
+		midi_out = Output(port, 0)
+		midi_out.write_short( it )
+	else:
+		print("no teensy MIDI available")
+
+def clockit():
+	sendit( 0xf8 )
+
+def stopit():
+	sendit( 0xfc )
+
+def startit():
+	sendit( 0xfa )
+
+def sendtempo( bpm ):
+	if bpm > 0:
+		t = (60000/24) / bpm
+	else:
+		stopit()
+		quit()
+	port = find_id()
+	if not port:
+		print("no teensy MIDI available")
+	midi_out = Output(port, 0)
+	# now = Time() + 3
+	# midi_out.write( [[[ 0xf8 ], now], [[ 0xf8 ], now + t]] )
+	# midi_out.write( [[[ 0xf8 ], now], [[ 0xf8 ], now + t]] )
+	# print("t=", t, "now=", now)
+	midi_out.write_short( 0xf8 )
+	sleep( t/1000 )
+	midi_out.write_short( 0xf8 )
+
 def exit_handler(signum, frame):
 	print('\nThank you and good-night!\n')
 	exit(0)
@@ -87,10 +125,13 @@ def loopit():
 
 
 def usage():
-    print("--kick : send kick note on / off")
-    print("--loop : loop, sending kick every 5 sec")
-    print("--list : list available midi devices")
-    print("--find : just check for teensy MIDI device")
+    print("--find  : just check for teensy MIDI device")
+    print("--kick  : send kick note on / off")
+    print("--list  : list available midi devices")
+    print("--loop  : loop, sending kick every 5 sec")
+    print("--start : send start to teensy MIDI device")
+    print("--stop  : send stop to teensy MIDI device")
+    print("--tempo n : send two clock messages based on tempo")
 
 
 if __name__ == "__main__":
@@ -98,7 +139,7 @@ if __name__ == "__main__":
     if "--find" in sys.argv or "-f" in sys.argv:
         teensy = find_id()
         if (teensy):
-            print("teensy MIDI output is device", find_id())
+            print("teensy MIDI is device", find_id())
         else:
             print("teensy MIDI is not available")
     elif "--kick" in sys.argv or "-k" in sys.argv:
@@ -107,5 +148,12 @@ if __name__ == "__main__":
         print_device_info()
     elif "--loop" in sys.argv or "-o" in sys.argv:
         loopit()
+    elif "--start" in sys.argv or "-s" in sys.argv:
+        startit()
+    elif "--stop" in sys.argv or "-q" in sys.argv:
+        stopit()
+    elif "--tempo" in sys.argv or "-t" in sys.argv:
+        print("setting tempo to {0:6.3f} bpm".format( tempo ))
+        sendtempo( tempo )
     else:
         usage()
