@@ -52,7 +52,7 @@ def find_id(target='Teensy MIDI'):
 	for d in range( get_count() ):
 		(interf, name, input, out, op) = get_device_info(d)
 		name = str(object=name, encoding='utf-8')
-		if (name == 'Teensy MIDI' and out == 1):
+		if (name.startswith( target ) and out == 1):
 			return d
 	quit()
 	return None
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     if "--find" in sys.argv or "-f" in sys.argv:
         teensy = find_id()
         if (teensy):
-            print("teensy MIDI is device", find_id())
+            print("teensy MIDI output is device", find_id())
         else:
             print("teensy MIDI is not available")
     elif "--kick" in sys.argv or "-k" in sys.argv:
