@@ -12,7 +12,7 @@ HARDWAREROOT  := $(wildcard ${ARDUINOPATH}/hardware/avr/*)
 TOOLSPATH     := $(abspath $(ARDUINOPATH)/tools)
 USERLIBPATH   := ${HOME}/Arduino/libraries
 
-HARDWARE_LIB_PATH := ${HARDWAREROOT}/libraries
+HARDWARELIB_PATH := ${HARDWAREROOT}/libraries
 
 # TEENSYLC := 1
 MCU      := MKL26Z64
@@ -20,9 +20,10 @@ CPUARCH  := cortex-m0plus
 CORE     := teensy3
 OPTIONS  := -DF_CPU=48000000
 SPECS    := --specs=nano.specs
-MCU_LD   := $(LIBRARYPATH)/mkl26z64.ld
+MCU_LD   := $(MYTEENSYDUINOPATH)/mkl26z64.ld
 
 LIBS     := -larm_cortexM0l_math
+
 LOCALTEENSY_LIBRARIES := Audio
 USERLIBRARIES         := TimedBlink/src
 
@@ -43,20 +44,20 @@ CPPFLAGS = -Wall -g -Os -mcpu=$(CPUARCH) -mthumb -MMD \
 # The distributed libraries aren't working for my teensy-LC
 ifdef LIBRARIES_GOOD
 CPPFLAGS += \
-	-I${HARDWAREROOT}/libraries/SD/src -I${HARDWAREROOT}/libraries/SerialFlash \
+	-I${HARDWAREROOT}/libraries/SD/src \
 	-I${HARDWAREROOT}/libraries/Wire
 else
 CPPFLAGS += \
-	-I${LIBRARYPATH}/SPI \
-	-I${LIBRARYPATH}/SD -I${LIBRARYPATH}/SerialFlash \
-	-I${LIBRARYPATH}/Wire
+	-I${MYTEENSYDUINOPATH}/SD \
+	-I${MYTEENSYDUINOPATH}/Wire
 endif
 
 CPPFLAGS += \
-	-I${HARDWAREROOT}/libraries/SPI \
-	-I${HARDWAREROOT}/libraries/Bounce \
-	-I${HARDWAREROOT}/libraries/i2c_t3 \
-	-I${HARDWAREROOT}/libraries/ADC
+	-I${HARDWARELIB_PATH}/SerialFlash \
+	-I${HARDWARELIB_PATH}/SPI \
+	-I${HARDWARELIB_PATH}/Bounce \
+	-I${HARDWARELIB_PATH}/i2c_t3 \
+	-I${HARDWARELIB_PATH}/ADC
 
 CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti
 CFLAGS =
@@ -67,27 +68,29 @@ LDFLAGS = -Os -Wl,--gc-sections,--defsym=__rtc_localtime=0 \
 	-L${TOOLSPATH}/teensy-compile/5.4.1/arm/arm-none-eabi/lib
 
 # names for the compiler programs
-CROSS_COMPILE=arm-none-eabi-
-CC      = $(CROSS_COMPILE)gcc
-CXX     = $(CROSS_COMPILE)g++
-OBJCOPY = $(CROSS_COMPILE)objcopy
-SIZE    = $(CROSS_COMPILE)size
-AR      = $(CROSS_COMPILE)ar
-RANLIB  = $(CROSS_COMPILE)ranlib
+CROSS_COMPILE := arm-none-eabi-
+CC      := $(CROSS_COMPILE)gcc
+CXX     := $(CROSS_COMPILE)g++
+OBJCOPY := $(CROSS_COMPILE)objcopy
+SIZE    := $(CROSS_COMPILE)size
+AR      := $(CROSS_COMPILE)ar
+RANLIB  := $(CROSS_COMPILE)ranlib
 
-MKDIR   = mkdir -p
+MKDIR   := mkdir -p
 
-OBJDIR = obj
-LIBDIR = lib
-LIBOBJDIR = ${LIBDIR}/obj
-BUILDDIR = build
+OBJDIR    := obj
+LIBDIR    := lib
+LIBOBJDIR := ${LIBDIR}/obj
+BUILDDIR  := build
 
 # Generate a version string from git for the C++ code to use
-GIT_DIRTY := $(shell test -n "`git diff-index --name-only HEAD`" && echo '-dirty')
+GIT_DIRTY   := $(shell test -n "`git diff-index --name-only HEAD`" && \
+  echo '-dirty')
 GIT_VERSION := $(shell git describe --tags || echo -n 'V0.NO-GIT')$(GIT_DIRTY)
 
 BUILD_DATE := $(shell date '+%y/%m/%d')
-CDEFINES += -DTEENSYKICK_VERSION=\"${GIT_VERSION}\" -DBUILD_DATE=\"${BUILD_DATE}\"
+CDEFINES += -DTEENSYKICK_VERSION=\"${GIT_VERSION}\" \
+	-DBUILD_DATE=\"${BUILD_DATE}\"
 
 CORE_LIB       := $(LIBDIR)/libCore.a  # from teensy-duino
 ADC_LIB        := $(LIBDIR)/libADC.a
@@ -110,14 +113,10 @@ TARGETS = \
 	hello_lc hello_adc hello_midi hello_8211 hello_sine hello_sgt hello_timer \
 	metronome kick kick_synth
 
-.PHONY: all load clean upload
+.PHONY: all load clean upload size
 all: $(addprefix ${BUILDDIR}/,${TARGETS:=.hex}) | ${BUILDDIR}
+	@echo ${BUILDDIR}/kick.hex ${GIT_VERSION} for ${PLATFORM} is ready
 
-# CPP_FILES = $(TARGET).cpp analog_stub.cpp usb_write.cpp
-# OBJS = $(addprefix $(OBJDIR)/,$(CPP_FILES:.cpp=.o))
-# $(TARGET).elf: $(OBJDIR) $(OBJS) $(LIB_LIST) $(MCU_LD)
-# 	$(LINK.o) $(OBJS) $(LIBS) -o $@
-# 	@echo built $@
 
 CPP_FILES := usb_write.cpp
 
@@ -179,11 +178,18 @@ ${BUILDDIR}/kick_synth.elf: $(K_S_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 # Create final output file (.hex) from ELF output file.
 ${BUILDDIR}/%.hex: ${BUILDDIR}/%.elf | ${BUILDDIR}
 	@echo
-	@$(SIZE) $<
+	@echo Total size of $@ in flash is $(shell $(SIZE) $< | \
+		perl -ne '{ if (/(\d+)\s+(\d+)\s+\d+/) { \
+			$$t = $$1 + $$2; printf( "%u : 0x%x\n", $$t, $$t ); } }' )
 	@echo
 	@echo Converting $@ from $<
 	@$(OBJCOPY) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
 	@echo
+
+size: ${BUILDDIR}/${TARGET}.elf
+	@echo Total size of $< in flash is $(shell $(SIZE) $< | \
+		perl -ne '{ if (/(\d+)\s+(\d+)\s+\d+/) { \
+			$$t = $$1 + $$2; printf( "%u : 0x%x\n", $$t, $$t ); } }' )
 
 upload load: ${BUILDDIR}/$(TARGET).hex
 	teensy_loader_cli.exe --mcu=$(MCU) -w -v $<
@@ -208,7 +214,6 @@ AudioSampleKiddykick.cpp : KiddyKick.wav
 	wav2sketch -16 $<
 
 include libs.mak
-# include $(LIBRARYPATH)/libraries.mak
 
 -include $(wildcard $(OBJDIR)/*.d)
 -include $(wildcard $(LIBOBJDIR)/*.d)
