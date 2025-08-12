@@ -8,9 +8,12 @@ LIBRARYPATH   := ../teensy-duino
 MYTEENSYDUINOPATH := ../teensy-duino
 ARDUINO_ROOT  ?= ${HOME}/.arduino15
 ARDUINOPATH   := ${ARDUINO_ROOT}/packages/teensy
-HARDWAREROOT  := $(wildcard ${ARDUINOPATH}/hardware/avr/*)
+HARDWAREROOT  := $(firstword $(wildcard $(ARDUINOPATH)/hardware/avr/*))
 TOOLSPATH     := $(abspath $(ARDUINOPATH)/tools)
 USERLIBPATH   := ${HOME}/Arduino/libraries
+
+TOOL_VER := $(notdir $(firstword $(wildcard \
+	${TOOLSPATH}/teensy-compile/*)))
 
 HARDWARELIB_PATH := ${HARDWAREROOT}/libraries
 
@@ -59,13 +62,14 @@ CPPFLAGS += \
 	-I${HARDWARELIB_PATH}/i2c_t3 \
 	-I${HARDWARELIB_PATH}/ADC
 
-CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fno-rtti \
+	-Wno-overloaded-virtual
 CFLAGS =
 ARFLAGS = crvs
 LDFLAGS = -Os -Wl,--gc-sections,--defsym=__rtc_localtime=0 \
 	${SPECS} -mcpu=$(CPUARCH) -mthumb -T$(MCU_LD) -Wl,-Map=$(basename $@).map \
-	--sysroot=${TOOLSPATH}/teensy-compile/5.4.1/arm \
-	-L${TOOLSPATH}/teensy-compile/5.4.1/arm/arm-none-eabi/lib
+	--sysroot=${TOOLSPATH}/teensy-compile/${TOOL_VER}/arm \
+	-L${TOOLSPATH}/teensy-compile/${TOOL_VER}/arm/arm-none-eabi/lib
 
 # names for the compiler programs
 CROSS_COMPILE := arm-none-eabi-
@@ -113,9 +117,9 @@ TARGETS = \
 	hello_lc hello_adc hello_midi hello_8211 hello_sine hello_sgt hello_timer \
 	metronome kick kick_synth
 
-.PHONY: all load clean upload size
-all: $(addprefix ${BUILDDIR}/,${TARGETS:=.hex}) | ${BUILDDIR}
-	@echo ${BUILDDIR}/kick.hex ${GIT_VERSION} for ${PLATFORM} is ready
+.PHONY: all load clean upload size sizes
+all: $(addprefix ${BUILDDIR}/,${TARGETS:=.hex}) sizes | ${BUILDDIR}
+	@echo "\n${BUILDDIR}/kick.hex ${GIT_VERSION} for ${PLATFORM} is ready"
 
 
 CPP_FILES := usb_write.cpp
@@ -124,44 +128,46 @@ HELLO_MIDI_CPP := hello_midi.cpp analog_stub.cpp
 HM_OBJS := $(addprefix $(OBJDIR)/,$(HELLO_MIDI_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_midi.elf: $(HM_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HM_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 HL_OBJS := $(addprefix $(OBJDIR)/,hello_lc.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_lc.elf: $(HL_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HL_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 H8_OBJS := $(addprefix $(OBJDIR)/,hello_8211.o $(CPP_FILES:.cpp=.o))
 ${H8_OBJS} : CPPFLAGS += -I${HARDWAREROOT}/libraries/SdFat/src
 ${BUILDDIR}/hello_8211.elf: $(H8_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(H8_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 HS_OBJS := $(addprefix $(OBJDIR)/,hello_sine.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_sine.elf: $(HS_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HS_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 HSGT_OBJS := $(addprefix $(OBJDIR)/,hello_sgt.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_sgt.elf: $(HSGT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HSGT_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 HT_OBJS := $(addprefix $(OBJDIR)/,hello_timer.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_timer.elf: $(HT_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HT_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 HA_OBJS := $(addprefix $(OBJDIR)/,hello_adc.o $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/hello_adc.elf: $(HA_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(HA_OBJS) $(LIBS) -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
 
 METRONOME_CPP := metronome.cpp analog_stub.cpp AudioSampleKiddykick.cpp
 M_OBJS := $(addprefix $(OBJDIR)/,$(METRONOME_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
 ${BUILDDIR}/metronome.elf: $(M_OBJS) $(LIB_LIST) $(BOUNCE_LIB) $(MCU_LD) | ${BUILDDIR}
 	@$(LINK.o) $(M_OBJS) $(LIBS) -lBounce -o $@
-	@echo built $@
+	@echo built $@ ${GIT_VERSION}
+
+$(OBJDIR)/metronome.o : AudioSampleKiddykick.h
 
 KICK_CPP := kick.cpp piezoTrigger.cpp AudioSampleKiddykick.cpp
 K_OBJS := $(addprefix $(OBJDIR)/,$(KICK_CPP:.cpp=.o) $(CPP_FILES:.cpp=.o))
@@ -177,19 +183,20 @@ ${BUILDDIR}/kick_synth.elf: $(K_S_OBJS) $(LIB_LIST) $(MCU_LD) | ${BUILDDIR}
 
 # Create final output file (.hex) from ELF output file.
 ${BUILDDIR}/%.hex: ${BUILDDIR}/%.elf | ${BUILDDIR}
-	@echo
-	@echo Total size of $@ in flash is $(shell $(SIZE) $< | \
-		perl -ne '{ if (/(\d+)\s+(\d+)\s+\d+/) { \
-			$$t = $$1 + $$2; printf( "%u : 0x%x\n", $$t, $$t ); } }' )
-	@echo
-	@echo Converting $@ from $<
+	@echo "\nConverting $@ from $<"
 	@$(OBJCOPY) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
-	@echo
 
 size: ${BUILDDIR}/${TARGET}.elf
 	@echo Total size of $< in flash is $(shell $(SIZE) $< | \
 		perl -ne '{ if (/(\d+)\s+(\d+)\s+\d+/) { \
 			$$t = $$1 + $$2; printf( "%u : 0x%x\n", $$t, $$t ); } }' )
+
+sizes: $(addprefix ${BUILDDIR}/,${TARGETS:=.elf})
+	@$(foreach ta,$^,\
+	echo Total size of ${ta} in flash is $(shell $(SIZE) ${ta} | \
+		perl -ne '{ if (/(\d+)\s+(\d+)\s+\d+/) { \
+			$$t = $$1 + $$2; printf( "%u : 0x%x\n", $$t, $$t ); } }' ); \
+			)
 
 upload load: ${BUILDDIR}/$(TARGET).hex
 	teensy_loader_cli.exe --mcu=$(MCU) -w -v $<
@@ -208,6 +215,8 @@ $(OBJDIR)/%.o : %.c | ${OBJDIR}
 $(OBJDIR)/%.o : %.cpp | ${OBJDIR}
 	@echo Building $@ from $<
 	@$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+AudioSampleKiddykick.h : AudioSampleKiddykick.cpp
 
 AudioSampleKiddykick.cpp : KiddyKick.wav
 	@echo Generating $@ from $<
